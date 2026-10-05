@@ -85,7 +85,18 @@ Jev on the 72 pull requests in `examples/eval/github-prs` (about 93% accurate be
 - **Small minibatches mislead.** Three candidates that beat the original on a 6-item minibatch lost on the 22-item validation set.
 - **A tiny held-out set cannot confirm anything.** 21 items gives an interval several points wide.
 
-No BANKING77 result is recorded here yet. Jev scores 82.5% on the 200-row sample before optimization, which leaves room to find a gain.
+Jev on BANKING77, a 200-row sample split 80/60/60 (Jev scores 82.5% on all 200, so there is room to find a gain), with
+`--criteria`, a budget of 800 and a DeepSeek reflection model, about $0.24 in all:
+
+- **Nothing to adopt.** Seven candidates beat the original on an 8-item minibatch, each by about one question, and none held
+  up: on the 60-item validation set six of them scored below the original and one scored 1.4 points above it (one rewritten
+  option description). On the held-out 60 items that candidate and the original both scored 80.0%, one item fixed and one
+  broken (interval -5.0 to +5.0 points).
+- **The cause is statistical power, not the proposals.** With 60 items one question is 1.7 points, and run-to-run noise is
+  about a question, so a gain of a point or two cannot be seen. Picking the best of several candidates on the same 8 items
+  also selects for luck, which is why each looked better than it was. Finding a real gain of that size needs a few hundred
+  items in the validation and held-out sets and a larger minibatch. BANKING77's test split has 3,080 rows and Jev costs
+  about $0.07 per thousand requests, so `banking77.py --n 1000` is affordable; the reflection model is the larger cost.
 
 ## Things to know
 
