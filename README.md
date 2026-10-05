@@ -195,6 +195,11 @@ rounded):
 - **`failures`** lists any tier that errored (a timeout, an open circuit breaker, an image it cannot take). A failed tier
   escalates everything it was asked, so the request still gets answered; the failure is data, not an error.
 - **`request_id`** is the same as the `X-Request-Id` header; it is what you give back when you say whether a decision was
+
+![A cascade trace on the status page](docs/images/status-trace-cascade.png)
+
+*The same trace on the status page: click any request to expand it. Demo data from fake models.*
+
   good (feedback, SPEC 13).
 
 Other modes use the same shape: `fan_out` asks several models at once and combines them (`reduce = "vote"`), and a
@@ -213,6 +218,11 @@ A route is a named plan: single, fan-out or cascade. You can also use an alias, 
 ### Cascade and thresholds
 
 Each tier has a confidence threshold. If the tier's answer is at or above it, the answer stays. If it's below, that question goes to the next tier. I let you set thresholds per tier and per question type. If a tier fails (timeout, open circuit breaker), everything it was asked escalates to the next tier. If the last tier fails, those questions keep the best answer seen so far, or have none, and the failure shows up in `failures` and the trace.
+
+![The cascade editor on the status page](docs/images/status-cascade-editor.png)
+
+*With `edit_routes` on, you can tune a cascade's tiers and thresholds from the status page.*
+
 
 ### Fan-out and reducers
 
@@ -246,6 +256,11 @@ A profile names an intent (`fast`, `best`) so you can swap the model behind it i
 - **Response cache**: I made it opt-in. Keys are per question, with a TTL. The tradeoff is privacy, since answers get held in memory.
 - **Cost accounting**: put prices in the config and the status page shows spend and an estimated saving. That estimate can be negative if your cheap tier escalates too much.
 
+![Models and spend on the status page](docs/images/status-models.png)
+
+*Spend per model, and the estimate of what the cascade saved. Demo data from fake models.*
+
+
 ## Clients and access control
 
 I give named clients their own keys (from env vars), rate limits, route allowlists, and admin-only stats access.
@@ -273,6 +288,11 @@ ignatius eval --config ignatius.toml --data test.jsonl --route strong --route 'c
 ```
 
 **3. Read the report.** You get accuracy with a confidence interval, what each tier contributed, cost, latency, how well the confidence tracks correctness, and a plain-language verdict against the first route. `--sweep` also shows where a cascade's threshold should be.
+
+![An evaluation result on the status page](docs/images/status-eval-result.png)
+
+*The Evaluate panel's report, with a threshold sweep at the bottom. Demo data from fake models. The models answer at random, so the verdict means nothing.*
+
 
 ```
 # a cascade whose cheap tier handled three quarters of the questions, on a 40-item set where both were right every time:
@@ -351,6 +371,11 @@ export IGNATIUS_API_KEY=$(openssl rand -hex 32)
 
 To rotate, put two keys in the variable, separated by a comma, and drop the old one when every caller has moved. If you listen on a non-loopback address with no key, the gateway refuses to start, unless you set `IGNATIUS_ALLOW_NO_AUTH=1`. Only do that behind something else that handles auth.
 
+![The key prompt on the status page](docs/images/status-key-prompt.png)
+
+*Once a key is required, the status page is locked until you paste one.*
+
+
 **3. Give each caller its own client.** A client gets its own key, rate limit and list of routes it may use. Add a `[[clients]]` entry and hand out the key.
 
 ```toml
@@ -364,6 +389,11 @@ routes = ["triage", "fast"]
 
 Past the rate limit you get a 429 with `Retry-After`. A route outside the list is a 403 `route_not_allowed`, the same error as for a name that doesn't exist. The status page and `/v1/stats` need `admin = true` on the client. Keys never appear in a response, log or stat. Recent requests record the client name only.
 
+![The Clients panel](docs/images/status-clients.png)
+
+*Admins see each client's requests, rate-limited count and spend.*
+
+
 **4. Sign people in with a password.** For people who shouldn't paste a key into the status page. Make a bcrypt hash with `./ignatius hash-password` (it reads the password from stdin), then add a user. A plaintext password in the config is a startup error.
 
 ```toml
@@ -375,7 +405,17 @@ admin = true
 
 Serve it over TLS. If a proxy sits in front, set `[admin] trust_proxy = true`, or every login throttles as one address. The status page then shows a sign-in form and gets a short-lived session key (8 hours by default). Sessions live in memory, so a restart signs everyone out. Groups, password reset, MFA and SSO aren't part of this repo.
 
+![The sign-in form on the status page](docs/images/status-sign-in.png)
+
+*With users configured, the lock screen also offers a username and password.*
+
+
 **5. Let key holders mint keys (optional).** Set `[admin] self_service_keys = true` and a `state_file`. Start with at least one configured key or user. Anyone with a valid key can then mint more, and only a hash of each is stored.
+
+![The API keys panel](docs/images/status-api-keys.png)
+
+*Signed in, you can name, rate-limit and expire a new key. It is shown once.*
+
 
 **6. Edit profiles and routes at runtime (optional).** Off by default. Set `[admin] edit_profiles = true` and `edit_routes = true`, sign in as an admin, and use the dropdowns and Edit buttons on the status page. Without `state_file`, edits are lost on restart.
 
