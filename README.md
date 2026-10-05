@@ -301,6 +301,12 @@ verdict: no detectable difference from strong (+0.0 points, 95% CI +0.0 to +0.0)
 
 The same engine is behind an admin API and an Evaluate panel on the status page. Turn it on with `[eval] enabled = true`. Every run makes real model calls.
 
+### Rewriting the questions (experimental)
+
+`benchmarks/optimize` tries to improve the questions themselves. It uses [GEPA](https://github.com/gepa-ai/gepa) to rewrite their instructions and option descriptions, scores each candidate with `ignatius eval`, and checks the result on items it never saw. It only recommends the new questions if the accuracy gain is detectable and the cost per item doesn't go up much.
+
+It hasn't found a gain yet. On the pull-request set and on BANKING77 the candidates that looked better on a small batch didn't hold up, because a few dozen items can't show a gain of a point or two. The README there says what we saw and what a real test needs.
+
 ## Status page
 
 `/` is the status page. It shows the live state: models, routes, spend, and a drill-down per request. When you set a key, it asks for one.

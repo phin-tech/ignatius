@@ -33,3 +33,7 @@ The same engine runs behind an admin API and the Evaluate panel on the status pa
 
 
 The test-set format and what is judged are in SPEC section 15.
+
+## Rewriting the questions
+
+`benchmarks/optimize` in the repo uses this same eval to try to improve the questions. It rewrites their instructions and option descriptions with GEPA, scores each candidate with `ignatius eval`, and recommends the new questions only if the accuracy gain on held-out items is detectable and the cost per item doesn't rise much. It is experimental, and it hasn't found a gain on the two sets we tried. Its README has the details.
