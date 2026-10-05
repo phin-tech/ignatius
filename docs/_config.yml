@@ -1,0 +1,6 @@
+title: Ignatius
+description: A gateway that routes questions across decision models
+remote_theme: just-the-docs/just-the-docs
+color_scheme: dark
+aux_links:
+  GitHub: https://github.com/phin-tech/ignatius

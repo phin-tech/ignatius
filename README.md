@@ -32,14 +32,16 @@ The saving comes from the cascade. The cheap tier is confident on most questions
 
 ### Run the gateway
 
-Build the single binary (Go 1.26), or the distroless image, from the `go/` directory:
+You need Go 1.26 and a Jev key, or any server that speaks `/v1/systemone`.
+
+**1. Build the binary** (or the distroless image) from the `go/` directory:
 
 ```sh
 git clone https://github.com/phin-tech/ignatius && cd ignatius/go
 go build -o ignatius ./cmd/ignatius      # or: docker build -t ignatius .
 ```
 
-A minimal `ignatius.toml` with one model. Secrets are environment variables the file names, never values in it:
+**2. Write an `ignatius.toml` with one model.** Secrets are environment variables the file names, never values in it:
 
 ```toml
 listen = "127.0.0.1:8081"
@@ -52,18 +54,21 @@ model = "jev-latest"
 api_key_env = "TYPESAFE_API_KEY"
 ```
 
+**3. Export the key and start the gateway:**
+
 ```sh
 export TYPESAFE_API_KEY=...
 ./ignatius serve --config ignatius.toml
 # {"msg":"ignatius listening on 127.0.0.1:8081; models [jev]; routes []"}
 ```
 
-`GET /healthz` and `GET /readyz` answer without a key, and `/` is the status page. On a loopback address no client key
-is needed; to listen anywhere else set `api_key_env` (the gateway refuses to start on a non-loopback address with no client key, unless you set `IGNATIUS_ALLOW_NO_AUTH=1`).
+**4. Check that it's up.** `GET /healthz` and `GET /readyz` answer without a key, and `/` is the status page. On a loopback address no client key is needed. To listen anywhere else, turn on auth (see [Auth](#auth)).
 
 ### Make a call
 
-The gateway speaks Jev's `/v1/systemone`, so anything that talks to Jev can talk to it:
+The gateway speaks Jev's `/v1/systemone`, so anything that talks to Jev can talk to it.
+
+**1. Send two questions**, a yes/no and a choice:
 
 ```sh
 curl -s localhost:8081/v1/systemone -d '{
@@ -77,6 +82,8 @@ curl -s localhost:8081/v1/systemone -d '{
 }'
 ```
 
+**2. Read the answer:**
+
 ```json
 {
   "model": "jev",
@@ -89,10 +96,10 @@ curl -s localhost:8081/v1/systemone -d '{
 }
 ```
 
-The first four fields are exactly what Jev returns. `ignatius` is the extra object only Ignatius adds, and clients that
+`ignatius` is the extra object only Ignatius adds. Every other field is what Jev returns, and clients that
 do not know it ignore it.
 
-**The official SDK**, unchanged: point `base_url` at the gateway. The SDK has no knob for routing, so the `model` name
+**3. Or use the official SDK, unchanged.** Point `base_url` at the gateway. The SDK has no knob for routing, so the `model` name
 selects a route, alias or inline route (below), and the SDK's default `jev-latest` selects `default_route`.
 
 ```python
@@ -109,8 +116,13 @@ with TypeSafeClient(api_key="local", base_url="http://127.0.0.1:8081") as client
     print(response.nouls["billing"].noul, response.choices["tone"].choice)      # 0.98 frustrated
 ```
 
-**The Ignatius SDKs** run the same config in process, with no gateway, or call a running one, and return the whole
-result with its trace. Python (not on PyPI yet, so install from the repo: `pip install "git+https://github.com/phin-tech/ignatius.git#subdirectory=python"`):
+**4. Or use the Ignatius SDKs.** They run the same config in process, with no gateway, or call a running one, and return the whole result with its trace. For Python, install it from the repo first (it isn't on PyPI yet):
+
+```sh
+pip install "git+https://github.com/phin-tech/ignatius.git#subdirectory=python"
+```
+
+Then:
 
 ```python
 from ignatius import Ignatius, Question, Request
@@ -140,7 +152,7 @@ routed, err := ignatius.Run(ctx, reg, ignatius.Request{
 }, plan)
 ```
 
-**Reading the trace.** Add a second model and a cascade route, so a cheap tier answers what it is sure of and the rest goes on:
+**5. Add a cascade and read the trace.** Add a second model and a cascade route, so a cheap tier answers what it is sure of and the rest goes on:
 
 ```toml
 [models.cheap]                     # any Jev-compatible server: Decis, Ollama's Clef, the Worker in deploy/clef-worker
@@ -226,7 +238,7 @@ I put everything in `ignatius.toml`: server keys, `[models.*]`, `[routes.*]`, au
 
 ## Profiles
 
-A profile names an intent (`fast`, `best`) so you can swap the model behind it in one line. Aliases are concrete models (`jeff`, `jev`) and profiles are intents. Don't name an alias after a quality. I made them resolve to the real model, so stats and traces stay honest. You can edit profiles and routes on the status page, but I left it off by default and admin only. If you set `[admin] state_file`, it saves edits there. Otherwise they're lost on restart. Models and clients aren't editable there on purpose, and it isn't built for several replicas yet.
+A profile names an intent (`fast`, `best`) so you can swap the model behind it in one line. Aliases are concrete models (`jeff`, `jev`) and profiles are intents. Don't name an alias after a quality. I made them resolve to the real model, so stats and traces stay honest. You can edit profiles and routes on the status page, but I left it off by default and admin only. If you set `[admin] state_file`, it saves edits there. Otherwise they're lost on restart. Models and clients aren't editable there on purpose, and it doesn't support several replicas.
 
 ## Reliability, caching and cost
 
@@ -250,21 +262,24 @@ I made the `[store]` optional: SQLite by default, Postgres if you run replicas. 
 
 ## Judging routes on your own data
 
-Is the cascade as good as the expensive model alone, and what does it save? Give `ignatius eval` a labeled test set and the routes
-to compare; it runs the real plans and reports accuracy with a confidence interval, what each tier contributed, cost, latency,
-how well the confidence tracks correctness, and a plain-language verdict against the first route. `--sweep` also shows where a
-cascade's threshold should be. The same engine is behind an admin API and an Evaluate panel on the status page
-(`[eval] enabled = true`; every run makes real model calls). SPEC 15 has the test-set format and exactly what is judged;
-`examples/eval` has two sample test sets to try it on (hand-written support tickets, and 72 real GitHub pull requests), and `benchmarks/classify` is a worked example on public data.
+Is the cascade as good as the expensive model alone, and what does it save? `ignatius eval` runs a labeled test set through the routes you name and tells you.
+
+**1. Get a labeled test set.** `examples/eval` has two to try: hand-written support tickets, and 72 real GitHub pull requests. `benchmarks/classify` is a worked example on public data. SPEC 15 has the test-set format.
+
+**2. Run it against two or more routes.** The first route is the baseline.
 
 ```sh
 ignatius eval --config ignatius.toml --data test.jsonl --route strong --route 'cascade:cheap@0.8>strong' --sweep
 ```
 
+**3. Read the report.** You get accuracy with a confidence interval, what each tier contributed, cost, latency, how well the confidence tracks correctness, and a plain-language verdict against the first route. `--sweep` also shows where a cascade's threshold should be.
+
 ```
 # a cascade whose cheap tier handled three quarters of the questions, on a 40-item set where both were right every time:
 verdict: no detectable difference from strong (+0.0 points, 95% CI +0.0 to +0.0), at 35% of its cost
 ```
+
+The same engine is behind an admin API and an Evaluate panel on the status page. Turn it on with `[eval] enabled = true`. Every run makes real model calls.
 
 ## Status page
 
@@ -276,13 +291,38 @@ That's demo data from two fake models, so the numbers mean nothing. With `edit_p
 
 ## Self-hosting models (dunce-union)
 
-This is the optional kit for running the models yourself. I included it for when you don't want to call a hosted API. It's a compose setup. You can also skip it and just point Ignatius at your own URL.
+dunce-union is an optional kit for running the models yourself. Skip it if you already host models, because Ignatius only needs a URL and auth. It lives in `deploy/dunce-union/`: a compose setup with one service per model, each an unmodified [Decis](https://github.com/chaitin/Decis) engine image with the weights baked in, behind the gateway.
 
-Be honest with yourself about model quality. The models differ, and so does how well their confidence is calibrated.
+**1. Set the keys.** Copy `.env.example` to `.env` and set both keys.
+
+```sh
+cd deploy/dunce-union
+cp .env.example .env
+```
+
+**2. Pick the models.** Set `COMPOSE_PROFILES` in `.env`. Each engine holds several GB of memory, so start only the ones you need. Compressed image sizes: laya 4.4G, jeff 5.9G, kev 6.0G, jeff-gemma 17.7G.
+
+**3. Start them.**
+
+```sh
+docker compose up -d --wait
+```
+
+**4. Talk to the gateway on port 8081.** It's the only published port. The model services are reachable only on the compose network.
+
+The models differ in quality, and so does how well their confidence is calibrated. Test a cascade on your own data before you rely on it (see [Judging routes](#judging-routes-on-your-own-data)).
 
 ## SDKs
 
-Python (not on PyPI yet; install from the repo with `pip install "git+https://github.com/phin-tech/ignatius.git#subdirectory=python"`) and Go (`github.com/phin-tech/ignatius/go/ignatius`). Both can run the same config in process, no gateway needed, or talk to a running one. The Quickstart has an example of each.
+Both SDKs run the same config in process, with no gateway, or talk to a running one. The Quickstart has an example of each.
+
+**Python:**
+1. Install it from the repo. It isn't on PyPI yet: `pip install "git+https://github.com/phin-tech/ignatius.git#subdirectory=python"`.
+2. Load your `ignatius.toml` with `Ignatius.from_config` and call `run_sync`, or point `GatewayClient` at a running gateway.
+
+**Go:**
+1. Import `github.com/phin-tech/ignatius/go/ignatius` and `github.com/phin-tech/ignatius/go/gateway`.
+2. Load the config, build the registry and the router, then call `ignatius.Run` with a plan.
 
 ## Observability
 
@@ -292,21 +332,73 @@ Telemetry never carries error messages, only error kinds, and content never goes
 
 I left OpenTelemetry out of the Python SDK on purpose. Instrument httpx instead.
 
+## Auth
+
+Turn on only what you need, in this order. Each step builds on the one before. The full rules are in SPEC 11.
+
+**1. Local development.** On a loopback address with no keys, no key is needed, and every caller is an admin.
+
+**2. Require a key.** Set `api_key_env` to the name of an environment variable that holds the key, export it, and send it as a Bearer token. A missing credential is a 403. A wrong one is a 401.
+
+```toml
+listen = ":8081"
+api_key_env = "IGNATIUS_API_KEY"
+```
+
+```sh
+export IGNATIUS_API_KEY=$(openssl rand -hex 32)
+```
+
+To rotate, put two keys in the variable, separated by a comma, and drop the old one when every caller has moved. If you listen on a non-loopback address with no key, the gateway refuses to start, unless you set `IGNATIUS_ALLOW_NO_AUTH=1`. Only do that behind something else that handles auth.
+
+**3. Give each caller its own client.** A client gets its own key, rate limit and list of routes it may use. Add a `[[clients]]` entry and hand out the key.
+
+```toml
+[[clients]]
+name = "support-bot"
+key_env = "SUPPORT_BOT_KEY"
+rate_limit_per_minute = 600
+burst = 50
+routes = ["triage", "fast"]
+```
+
+Past the rate limit you get a 429 with `Retry-After`. A route outside the list is a 403 `route_not_allowed`, the same error as for a name that doesn't exist. The status page and `/v1/stats` need `admin = true` on the client. Keys never appear in a response, log or stat. Recent requests record the client name only.
+
+**4. Sign people in with a password.** For people who shouldn't paste a key into the status page. Make a bcrypt hash with `./ignatius hash-password` (it reads the password from stdin), then add a user. A plaintext password in the config is a startup error.
+
+```toml
+[[users]]
+name = "sam"
+password_hash = "$2a$12$..."
+admin = true
+```
+
+Serve it over TLS. If a proxy sits in front, set `[admin] trust_proxy = true`, or every login throttles as one address. The status page then shows a sign-in form and gets a short-lived session key (8 hours by default). Sessions live in memory, so a restart signs everyone out. Groups, password reset, MFA and SSO aren't part of this repo.
+
+**5. Let key holders mint keys (optional).** Set `[admin] self_service_keys = true` and a `state_file`. Start with at least one configured key or user. Anyone with a valid key can then mint more, and only a hash of each is stored.
+
+**6. Edit profiles and routes at runtime (optional).** Off by default. Set `[admin] edit_profiles = true` and `edit_routes = true`, sign in as an admin, and use the dropdowns and Edit buttons on the status page. Without `state_file`, edits are lost on restart.
+
 ## Security and privacy
 
-Secrets come from env vars. Auth is per client key. Loopback needs none, and the gateway refuses to start on a non-loopback address without one, unless you set `IGNATIUS_ALLOW_NO_AUTH=1`.
-
-What gets logged and stored is metadata unless a client opts in to content. Trace headers only go upstream if you turn that on.
+Secrets come from env vars, never from the config file. See [Auth](#auth) for keys, clients and login. What gets logged and stored is metadata unless a client opts in to content. Trace headers only go upstream if you turn that on.
 
 ## Development
 
 The Go gateway is in `go/`, the Python SDK in `python/`, and the shared fixtures live in `spec/`. `SPEC.md` is the contract.
 
-Run the Go and Python suites, plus the interop test. I made a few integration tests opt-in; they skip without their environment. They cover the store on Postgres (`IGNATIUS_TEST_POSTGRES_DSN`), the Kinesis sink on the Floci emulator (`IGNATIUS_TEST_KINESIS_ENDPOINT`), the Kafka sink on Floci's MSK (`go/plugins/kafka/test-msk-floci.sh`), a real Kafka broker (`IGNATIUS_TEST_KAFKA_BROKERS`, `IGNATIUS_TEST_KAFKA_TOPIC`), and the whole feedback loop against real Jev (`IGNATIUS_REAL=1 TYPESAFE_API_KEY=... go test ./gateway -run TestRealJev -v`). CI runs the first three.
+**1. Run the Go suite:** `cd go && go test ./...`
 
-## Roadmap
+**2. Run the Python suite and the interop test** from `python/`.
 
-Short list in `SPEC.md` section 10.
+**3. Run the opt-in integration tests** if you need them. Each skips without its environment:
+- the store on Postgres (`IGNATIUS_TEST_POSTGRES_DSN`)
+- the Kinesis sink on the Floci emulator (`IGNATIUS_TEST_KINESIS_ENDPOINT`)
+- the Kafka sink on Floci's MSK (`go/plugins/kafka/test-msk-floci.sh`)
+- a real Kafka broker (`IGNATIUS_TEST_KAFKA_BROKERS`, `IGNATIUS_TEST_KAFKA_TOPIC`)
+- the whole feedback loop against real Jev (`IGNATIUS_REAL=1 TYPESAFE_API_KEY=... go test ./gateway -run TestRealJev -v`)
+
+CI runs the first three.
 
 ## License
 

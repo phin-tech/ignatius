@@ -629,28 +629,26 @@ policy (1.2), CI, images with per-model limits and Clef (3.1), and evaluation of
 **Next**, in rough priority order:
 
 1. **Publish images:** CI builds them (nothing is pushed); publishing needs a registry decision.
-2. **The seams** that let a separate, closed-source package add roles and browser login (OIDC)
-   without forking this repo (10.2). Self-service API keys and password login (11.5, 11.6) shipped.
-3. **Real-data validation:** run the loop (cascade, shadow audit, feedback, `calibrate`,
+2. **Real-data validation:** run the loop (cascade, shadow audit, feedback, `calibrate`,
    export) against real models, not fakes and emulators. `TestRealJevFeedbackLoop` does it
    against Jev (`IGNATIUS_REAL=1 TYPESAFE_API_KEY=...`); it has been run only against a
    Jev-shaped local server so far. The real test for the confidence policy is a Laya-versus-Jev
    run on the churn-risk ticket (Laya: 0.01, Jev: 0.98, both "confident").
-4. **Helm chart** (`deploy/helm/ignatius`, see section 8).
-5. **Retries and a `race` mode** (first confident answer wins) for tail latency.
-6. **More providers:** an `openai`-style adapter (structured output; fan-out only,
+3. **Helm chart** (`deploy/helm/ignatius`, see section 8).
+4. **Retries and a `race` mode** (first confident answer wins) for tail latency.
+5. **More providers:** an `openai`-style adapter (structured output; fan-out only,
    since it has no calibrated confidence). The Workers AI provider for hosted Clef exists (3.1);
    only the REST envelope around Clef's output is unchecked against Cloudflare.
-7. **Per-client budgets** (spend caps per day) on top of 11.3 and 11.4.
-8. **Wider performance coverage:** end-to-end cascade and fan-out latency, concurrency
+6. **Per-client budgets** (spend caps per day) on top of 11.3 and 11.4.
+7. **Wider performance coverage:** end-to-end cascade and fan-out latency, concurrency
     and throughput.
-9. **Observability follow-ups:** alerting rules and a Grafana dashboard for the metrics
+8. **Observability follow-ups:** alerting rules and a Grafana dashboard for the metrics
     below; OTLP *log* export (logs are structured stdout today); gRPC OTLP; an optional
     pprof endpoint behind an env toggle.
 
 **Open decisions:** the confidence policy above; whether to store answer values
 in stats behind an opt-in; whether Pkl is worth adding as an authoring layer
-(rendering to the same TOML, no runtime dependency); the four login decisions in 10.2.
+(rendering to the same TOML, no runtime dependency).
 
 ### 10.1 Observability (OpenTelemetry) — implemented
 
@@ -763,88 +761,6 @@ work; the client is thin. To connect an app's trace to the gateway's, instrument
 continues the trace. Verified against the real gateway: the app's trace id appears in the
 gateway's log line. An in-process Python SDK user who wants spans around calls can wrap
 them with the OpenTelemetry API directly.
-
-### 10.2 Roles and browser login (planned, outside this repository)
-
-**Scope.** This repository (Apache 2.0) keeps static API keys, per-client limits, the single
-`admin` flag and self-service keys (11.5). Roles, OIDC login and an identity-aware audit
-trail are not built here: they live in a separate, proprietary package that imports the
-gateway as a library and builds its own binary. This repository's part is to define the
-seams, nothing more:
-- an `Authenticator` that turns a request into an `Identity` (name, role, claims). The
-  built-in one is the API-key lookup; the other package chains its own in front of it.
-- `Identity` replaces the `admin bool`; handlers ask for a permission (*view*, *edit*,
-  *admin*) rather than reading a flag. In this repository `admin` grants all three.
-- constructor options (`WithAuthenticator`, `WithAuthorizer`, an audit hook, extra routes
-  for a login page), so nothing in `gateway` needs to know about OIDC.
-
-These interfaces are a public API once the other package depends on them, so they follow
-semver. The rest of this section is the design for that package, kept here as the record.
-
-Nothing in the rest of this section is built. Today one `admin` flag gates stats, `/metrics` and every edit, and
-the status page takes a pasted API key. The goal is real people with real roles, and a
-trustworthy answer to "who changed `best`?".
-
-**Recommended flow:** Authorization Code + PKCE in the browser, sending the result as a
-`Bearer` token. Our endpoints already authenticate with `Authorization: Bearer` and no
-cookies, so there is no CSRF exposure and the request path stays as it is.
-
-**Changes, in build order:**
-1. **Roles, with no identity provider.** `role = "viewer" | "editor" | "admin"` on static
-   clients (the old `admin = true` stays valid as `admin`). Replace each `c.admin` check with a
-   permission: *view* (stats, `/metrics`, admin views), *edit* (profile and route PUT/DELETE),
-   admin (everything). A view's `editable` reflects the caller's permission, not only whether
-   the feature is on. Useful by itself: read-only dashboard keys.
-2. **JWT verification and role mapping.** A vetted library (`go-oidc` or similar) does JWKS
-   fetching, caching and rotation, the algorithm allowlist, and `iss`/`aud`/`exp`; we do not
-   hand-roll it. Config: `[auth.oidc]` with `issuer`, `client_id`, `audience`,
-   `groups_claim`, and `[[auth.oidc.roles]]` mapping a group to a role. The mapping is
-   explicit, so a token can never grant itself a role. The auth lookup tries static keys
-   first (constant-time), then a JWT if OIDC is configured. Startup does not require the
-   provider to be reachable (lazy discovery with a timeout).
-3. **Identity.** The audit `actor` and a `user` log field carry the user's identity; metric
-   labels and the `client` column carry the bounded role (for example `oidc:editor`), never
-   a person.
-4. **`GET /v1/auth/config`** (public, no secrets): issuer, client id, scopes and the
-   provider's authorization and token endpoints.
-5. **The status page:** a "Sign in" button (key entry stays for static keys); PKCE with
-   state, nonce and verifier checked; exact-match redirect URI; the token in
-   `sessionStorage`; the code removed from the URL; the signed-in user and role shown; edit
-   controls hidden for viewers; Sign out; re-login on expiry (no silent refresh at first).
-6. **CSP.** Replace `script-src 'unsafe-inline'` with a per-response nonce, add
-   `frame-ancestors 'none'` and the provider's origin to `connect-src`. A login token in
-   `sessionStorage` is readable by any injected script, which raises the stakes on the
-   current policy.
-7. **Tests:** a fake provider (discovery, JWKS, a token minting helper) covering a valid
-   token, expired, wrong audience, wrong issuer, `alg: none` and HS256 confusion, an unmapped
-   group, key rotation and clock skew; static keys still work; the audit actor is the user;
-   a token never appears in a log; and a headless-browser run of the PKCE flow including a
-   state mismatch.
-
-**Security musts:** validate `state`, `nonce` and the PKCE verifier; exact-match redirect
-URIs; check `aud`; short token lifetimes (a JWT cannot be revoked before it expires, so
-removing someone from a group takes effect at expiry); never log a token; default deny.
-
-**Caveats:**
-- The page should send an *access token* with the API as its audience. Group claims often
-  appear only in the ID token unless the provider is configured to add them to the access
-  token; if that is missed, role mapping silently grants nothing.
-- Audit logs would then hold emails, which is personal data. That should be a deliberate
-  choice.
-- Two kinds of Bearer token share one header, so the rule for telling them apart must be
-  explicit, and per-client rate limits and allowlists do not map onto people.
-- **Unverified, to check before any code:** the provider must allow our origin on its token
-  endpoint (CORS; Okta supports this for single-page apps); Clerk is a hosted session system
-  and may not offer a standard authorization-code flow to a third-party app; providers are
-  strict about redirect URIs and often require HTTPS except on localhost.
-
-**Decisions needed before building:**
-- Should a login token be accepted for routing (`/v1/systemone`, `/v1/route`)? Recommended
-  **no**: tokens work for the dashboard and management endpoints only, and routing stays on
-  rate-limited, allowlisted client keys, so a stolen browser token cannot run model calls.
-- Audit identity: the email, or a stable id (`sub`) with the email stored alongside.
-- A signed-in user whose groups map to no role: deny (recommended) or default to viewer.
-- Which identity provider will actually be used.
 
 ## 11. Resilience, cost and access control
 
@@ -1005,7 +921,7 @@ max_keys_per_principal = 20                    # keys one principal may have cre
 ### 11.6 Users and login (opt-in)
 
 Password sign-in for the status page, for people who should not paste a key. It is the
-simple-auth tier: users live in the config. Anything backed by an identity provider is 10.2.
+simple-auth tier: users live in the config.
 
 ```toml
 [admin]
