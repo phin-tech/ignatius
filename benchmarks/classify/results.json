@@ -1,0 +1,764 @@
+{
+ "n": 200,
+ "seed": 7,
+ "summaries": [
+  {
+   "task": "banking77",
+   "model": "jev",
+   "n": 200,
+   "errors": 0,
+   "classes": 74,
+   "accuracy": 0.815,
+   "ci95": [
+    0.7554281794988184,
+    0.8626988367726394
+   ],
+   "latency_ms_p50": 195.18695794977248,
+   "latency_ms_p95": 277.21212478354573,
+   "input_tokens_mean": 1687.215,
+   "usd_per_1k": 0.07086303,
+   "ece_top_prob": 0.08334999999999995,
+   "auroc_confidence": 0.8585640855579506,
+   "auroc_top_prob": 0.8603879953573205,
+   "auroc_native": null
+  },
+  {
+   "task": "banking77",
+   "model": "clef-flash",
+   "n": 200,
+   "errors": 0,
+   "classes": 74,
+   "accuracy": 0.965,
+   "ci95": [
+    0.9295285391333187,
+    0.982944675362643
+   ],
+   "latency_ms_p50": 316.3228335324675,
+   "latency_ms_p95": 544.4292081519961,
+   "input_tokens_mean": 1833.155,
+   "usd_per_1k": 0.16498395,
+   "ece_top_prob": 0.0344574999999999,
+   "auroc_confidence": 0.9052553663952627,
+   "auroc_top_prob": 0.9052553663952627,
+   "auroc_native": 0.9045151739452257
+  },
+  {
+   "task": "banking77",
+   "model": "clef",
+   "n": 200,
+   "errors": 1,
+   "classes": 74,
+   "accuracy": 0.949748743718593,
+   "ci95": [
+    0.909983076480946,
+    0.9724789037045781
+   ],
+   "latency_ms_p50": 773.3234581537545,
+   "latency_ms_p95": 2521.593041718006,
+   "input_tokens_mean": 1833.1608040201006,
+   "usd_per_1k": 0.4399585929648241,
+   "ece_top_prob": 0.046680402010050276,
+   "auroc_confidence": 0.9343915343915344,
+   "auroc_top_prob": 0.9343915343915344,
+   "auroc_native": 0.9322751322751323
+  },
+  {
+   "task": "ag_news",
+   "model": "jev",
+   "n": 200,
+   "errors": 0,
+   "classes": 4,
+   "accuracy": 0.885,
+   "ci95": [
+    0.8333517476611362,
+    0.9221368277817569
+   ],
+   "latency_ms_p50": 181.73904158174992,
+   "latency_ms_p95": 236.24587478116155,
+   "input_tokens_mean": 395.495,
+   "usd_per_1k": 0.016610790000000004,
+   "ece_top_prob": 0.08489999999999999,
+   "auroc_confidence": 0.7921886514369934,
+   "auroc_top_prob": 0.7730287398673544,
+   "auroc_native": null
+  },
+  {
+   "task": "ag_news",
+   "model": "clef-flash",
+   "n": 200,
+   "errors": 0,
+   "classes": 4,
+   "accuracy": 0.92,
+   "ci95": [
+    0.8740095102048769,
+    0.9501598448237336
+   ],
+   "latency_ms_p50": 307.6568122487515,
+   "latency_ms_p95": 566.4572077803314,
+   "input_tokens_mean": 220.905,
+   "usd_per_1k": 0.019881450000000002,
+   "ece_top_prob": 0.02381400000000008,
+   "auroc_confidence": 0.7367527173913043,
+   "auroc_top_prob": 0.7367527173913043,
+   "auroc_native": 0.7353940217391305
+  },
+  {
+   "task": "ag_news",
+   "model": "clef",
+   "n": 200,
+   "errors": 3,
+   "classes": 4,
+   "accuracy": 0.9035532994923858,
+   "ci95": [
+    0.8542838248375219,
+    0.9373848334484111
+   ],
+   "latency_ms_p50": 587.0940424501896,
+   "latency_ms_p95": 1580.596708226949,
+   "input_tokens_mean": 220.53807106598984,
+   "usd_per_1k": 0.05292913705583756,
+   "ece_top_prob": 0.02183147208121826,
+   "auroc_confidence": 0.8551153163808397,
+   "auroc_top_prob": 0.8551153163808397,
+   "auroc_native": 0.855410999408634
+  },
+  {
+   "task": "sst2",
+   "model": "jev",
+   "n": 200,
+   "errors": 0,
+   "classes": 2,
+   "accuracy": 0.94,
+   "ci95": [
+    0.8980673646931491,
+    0.9653481500987285
+   ],
+   "latency_ms_p50": 194.31766704656184,
+   "latency_ms_p95": 241.18691589683294,
+   "input_tokens_mean": 298.37,
+   "usd_per_1k": 0.01253154,
+   "ece_top_prob": 0.07370000000000003,
+   "auroc_confidence": 0.907136524822695,
+   "auroc_top_prob": 0.9064716312056738,
+   "auroc_native": null
+  },
+  {
+   "task": "sst2",
+   "model": "clef-flash",
+   "n": 200,
+   "errors": 0,
+   "classes": 2,
+   "accuracy": 0.94,
+   "ci95": [
+    0.8980673646931491,
+    0.9653481500987285
+   ],
+   "latency_ms_p50": 276.38745843432844,
+   "latency_ms_p95": 545.3503751195967,
+   "input_tokens_mean": 167.555,
+   "usd_per_1k": 0.01507995,
+   "ece_top_prob": 0.04245499999999992,
+   "auroc_confidence": 0.768395390070922,
+   "auroc_top_prob": 0.768395390070922,
+   "auroc_native": null
+  },
+  {
+   "task": "sst2",
+   "model": "clef",
+   "n": 200,
+   "errors": 0,
+   "classes": 2,
+   "accuracy": 0.955,
+   "ci95": [
+    0.9167024063390321,
+    0.9761477282752958
+   ],
+   "latency_ms_p50": 514.0891668852419,
+   "latency_ms_p95": 991.0875419154763,
+   "input_tokens_mean": 167.555,
+   "usd_per_1k": 0.040213200000000004,
+   "ece_top_prob": 0.024577499999999936,
+   "auroc_confidence": 0.8394415357766143,
+   "auroc_top_prob": 0.8394415357766143,
+   "auroc_native": null
+  }
+ ],
+ "cascades": [
+  {
+   "task": "banking77",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.5,
+   "accuracy": 0.955,
+   "escalated": 0.015
+  },
+  {
+   "task": "banking77",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.6,
+   "accuracy": 0.95,
+   "escalated": 0.025
+  },
+  {
+   "task": "banking77",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.7,
+   "accuracy": 0.945,
+   "escalated": 0.04
+  },
+  {
+   "task": "banking77",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.8,
+   "accuracy": 0.95,
+   "escalated": 0.06
+  },
+  {
+   "task": "banking77",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.9,
+   "accuracy": 0.95,
+   "escalated": 0.13
+  },
+  {
+   "task": "banking77",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.95,
+   "accuracy": 0.915,
+   "escalated": 0.32
+  },
+  {
+   "task": "banking77",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.5,
+   "accuracy": 0.955,
+   "escalated": 0.015
+  },
+  {
+   "task": "banking77",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.6,
+   "accuracy": 0.95,
+   "escalated": 0.025
+  },
+  {
+   "task": "banking77",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.7,
+   "accuracy": 0.945,
+   "escalated": 0.04
+  },
+  {
+   "task": "banking77",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.8,
+   "accuracy": 0.95,
+   "escalated": 0.06
+  },
+  {
+   "task": "banking77",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.9,
+   "accuracy": 0.955,
+   "escalated": 0.13
+  },
+  {
+   "task": "banking77",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.95,
+   "accuracy": 0.95,
+   "escalated": 0.32
+  },
+  {
+   "task": "banking77",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.5,
+   "accuracy": 0.945,
+   "escalated": 0.025
+  },
+  {
+   "task": "banking77",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.6,
+   "accuracy": 0.945,
+   "escalated": 0.045
+  },
+  {
+   "task": "banking77",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.7,
+   "accuracy": 0.945,
+   "escalated": 0.07
+  },
+  {
+   "task": "banking77",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.8,
+   "accuracy": 0.945,
+   "escalated": 0.105
+  },
+  {
+   "task": "banking77",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.9,
+   "accuracy": 0.92,
+   "escalated": 0.195
+  },
+  {
+   "task": "banking77",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.95,
+   "accuracy": 0.89,
+   "escalated": 0.375
+  },
+  {
+   "task": "banking77",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.5,
+   "accuracy": 0.855,
+   "escalated": 0.05
+  },
+  {
+   "task": "banking77",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.6,
+   "accuracy": 0.885,
+   "escalated": 0.12
+  },
+  {
+   "task": "banking77",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.7,
+   "accuracy": 0.89,
+   "escalated": 0.145
+  },
+  {
+   "task": "banking77",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.8,
+   "accuracy": 0.895,
+   "escalated": 0.23
+  },
+  {
+   "task": "banking77",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.9,
+   "accuracy": 0.925,
+   "escalated": 0.335
+  },
+  {
+   "task": "banking77",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.95,
+   "accuracy": 0.93,
+   "escalated": 0.405
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.5,
+   "accuracy": 0.925,
+   "escalated": 0.045
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.6,
+   "accuracy": 0.915,
+   "escalated": 0.08
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.7,
+   "accuracy": 0.9,
+   "escalated": 0.115
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.8,
+   "accuracy": 0.9,
+   "escalated": 0.185
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.9,
+   "accuracy": 0.895,
+   "escalated": 0.285
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.95,
+   "accuracy": 0.895,
+   "escalated": 0.56
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.5,
+   "accuracy": 0.91,
+   "escalated": 0.045
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.6,
+   "accuracy": 0.91,
+   "escalated": 0.08
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.7,
+   "accuracy": 0.915,
+   "escalated": 0.115
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.8,
+   "accuracy": 0.9,
+   "escalated": 0.185
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.9,
+   "accuracy": 0.905,
+   "escalated": 0.285
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.95,
+   "accuracy": 0.9,
+   "escalated": 0.56
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.5,
+   "accuracy": 0.91,
+   "escalated": 0.08
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.6,
+   "accuracy": 0.92,
+   "escalated": 0.11
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.7,
+   "accuracy": 0.91,
+   "escalated": 0.14
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.8,
+   "accuracy": 0.92,
+   "escalated": 0.185
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.9,
+   "accuracy": 0.91,
+   "escalated": 0.26
+  },
+  {
+   "task": "ag_news",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.95,
+   "accuracy": 0.895,
+   "escalated": 0.445
+  },
+  {
+   "task": "ag_news",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.5,
+   "accuracy": 0.89,
+   "escalated": 0.025
+  },
+  {
+   "task": "ag_news",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.6,
+   "accuracy": 0.89,
+   "escalated": 0.04
+  },
+  {
+   "task": "ag_news",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.7,
+   "accuracy": 0.895,
+   "escalated": 0.09
+  },
+  {
+   "task": "ag_news",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.8,
+   "accuracy": 0.895,
+   "escalated": 0.11
+  },
+  {
+   "task": "ag_news",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.9,
+   "accuracy": 0.89,
+   "escalated": 0.155
+  },
+  {
+   "task": "ag_news",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.95,
+   "accuracy": 0.885,
+   "escalated": 0.195
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.5,
+   "accuracy": 0.95,
+   "escalated": 0.045
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.6,
+   "accuracy": 0.955,
+   "escalated": 0.07
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.7,
+   "accuracy": 0.955,
+   "escalated": 0.11
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.8,
+   "accuracy": 0.96,
+   "escalated": 0.17
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.9,
+   "accuracy": 0.945,
+   "escalated": 0.55
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef-flash",
+   "dear": "jev",
+   "threshold": 0.95,
+   "accuracy": 0.94,
+   "escalated": 0.835
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.5,
+   "accuracy": 0.95,
+   "escalated": 0.045
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.6,
+   "accuracy": 0.955,
+   "escalated": 0.07
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.7,
+   "accuracy": 0.955,
+   "escalated": 0.11
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.8,
+   "accuracy": 0.955,
+   "escalated": 0.17
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.9,
+   "accuracy": 0.955,
+   "escalated": 0.55
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef-flash",
+   "dear": "clef",
+   "threshold": 0.95,
+   "accuracy": 0.955,
+   "escalated": 0.835
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.5,
+   "accuracy": 0.955,
+   "escalated": 0.035
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.6,
+   "accuracy": 0.95,
+   "escalated": 0.09
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.7,
+   "accuracy": 0.95,
+   "escalated": 0.105
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.8,
+   "accuracy": 0.94,
+   "escalated": 0.15
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.9,
+   "accuracy": 0.94,
+   "escalated": 0.335
+  },
+  {
+   "task": "sst2",
+   "cheap": "clef",
+   "dear": "jev",
+   "threshold": 0.95,
+   "accuracy": 0.94,
+   "escalated": 0.59
+  },
+  {
+   "task": "sst2",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.5,
+   "accuracy": 0.955,
+   "escalated": 0.155
+  },
+  {
+   "task": "sst2",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.6,
+   "accuracy": 0.955,
+   "escalated": 0.225
+  },
+  {
+   "task": "sst2",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.7,
+   "accuracy": 0.955,
+   "escalated": 0.32
+  },
+  {
+   "task": "sst2",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.8,
+   "accuracy": 0.955,
+   "escalated": 0.45
+  },
+  {
+   "task": "sst2",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.9,
+   "accuracy": 0.955,
+   "escalated": 0.69
+  },
+  {
+   "task": "sst2",
+   "cheap": "jev",
+   "dear": "clef",
+   "threshold": 0.95,
+   "accuracy": 0.955,
+   "escalated": 0.91
+  }
+ ]
+}

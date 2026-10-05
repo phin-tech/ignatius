@@ -1,0 +1,46 @@
+# Clef (Cloudflare's open-weight decision model) behind Ignatius, two ways, plus Jev for text.
+# See SPEC 3.1. Secrets are environment variables; nothing here is sensitive.
+#
+#   Self-hosted:  ollama pull clef-flash        (Ollama 0.35.1 or later; it serves /v1/systemone itself)
+#   Hosted:       a Cloudflare account id and an API token with Workers AI permission
+#
+# Only images need Clef: Jev is text-only, so a request with images skips it (and says so in the
+# response's `failures`) and goes to the next tier that takes them.
+
+listen = "127.0.0.1:8081"
+api_key_env = "IGNATIUS_API_KEY"
+default_route = "triage"
+# Images are base64 in the request body, so allow more than the 2 MiB default.
+max_request_bytes = 16777216
+
+[models.jev]                       # text only: no [limits] means no images
+provider = "systemone"
+base_url = "https://api.typesafe.ai"
+model = "jev-latest"
+api_key_env = "TYPESAFE_API_KEY"
+
+[models.clef-flash]                # 9B, self-hosted through Ollama
+provider = "systemone"
+base_url = "http://localhost:11434"
+model = "clef-flash"
+timeout_ms = 30000
+confidence = "derived"             # judge by the probabilities, so 0.8 here means what it does for Jev (SPEC 1.2)
+[models.clef-flash.limits]
+max_questions = 64
+max_images = 4
+
+[models.clef]                      # 27B, hosted on Cloudflare Workers AI (SPEC 3.1; or through the Worker in deploy/clef-worker)
+provider = "workers-ai"
+model = "@cf/cloudflare/clef"
+account_id_env = "CLOUDFLARE_ACCOUNT_ID"
+api_key_env = "CLOUDFLARE_API_TOKEN"
+timeout_ms = 30000
+confidence = "derived"
+[models.clef.limits]
+max_questions = 64
+max_images = 4
+
+# Text: Jev answers when it is sure. Images: Jev is skipped; Clef-flash answers when it is sure, else Clef.
+[routes.triage]
+mode = "cascade"
+tiers = [ { model = "jev", threshold = 0.9 }, { model = "clef-flash", threshold = 0.8 }, "clef" ]

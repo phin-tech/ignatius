@@ -1,0 +1,14 @@
+{
+  // A Cloudflare Worker that puts the Jev-compatible /v1/systemone in front of Workers AI Clef, so an
+  // Ignatius `provider = "systemone"` model (or the official typesafe SDK) can use hosted Clef with
+  // nothing special. Auth is a Worker secret: `wrangler secret put WORKER_API_KEY`.
+  "name": "ignatius-clef",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "ai": { "binding": "AI" },
+  "vars": {
+    // What a request with no model, or the SDK's default "jev-latest", is answered by.
+    "DEFAULT_MODEL": "clef-flash"
+  }
+}

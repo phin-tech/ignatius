@@ -1,0 +1,11 @@
+{
+  "name": "unsettled after last tier takes highest confidence, ties go to later tier",
+  "mode": "cascade",
+  "args": { "tiers": ["jeff", "jev"], "threshold": 0.99 },
+  "request": { "state": "x", "questions": { "q": { "type": "choice", "instructions": "?", "criteria": ["a", "b"] } } },
+  "mock": {
+    "jeff": { "answers": { "q": { "type": "choice", "choice": "a", "probabilities": { "a": 0.9, "b": 0.1 }, "confidence": 0.9 } } },
+    "jev":  { "answers": { "q": { "type": "choice", "choice": "b", "probabilities": { "a": 0.4, "b": 0.6 } } } }
+  },
+  "expect": { "answers": { "q": { "model": "jeff", "choice": "a", "confidence": 0.9 } } }
+}

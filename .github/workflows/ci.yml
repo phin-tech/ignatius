@@ -1,0 +1,185 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch or PR makes an older run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION_FILE: go/go.mod
+  GO_CACHE_PATHS: |
+    go/go.sum
+    go/plugins/*/go.sum
+
+jobs:
+  # The core module: formatting, vet, and every package's tests with the race detector. This
+  # includes the build tests that compile the stock and minimal commands.
+  go-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: go
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ env.GO_VERSION_FILE }}
+          cache-dependency-path: ${{ env.GO_CACHE_PATHS }}
+      - name: gofmt (the whole tree, plugins included)
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then echo "needs gofmt:"; echo "$unformatted"; exit 1; fi
+      - run: go vet ./...
+      - run: go test -race -count=1 ./...
+
+  # Each sink plugin is its own module (so the core never links its SDK) and needs its own run.
+  go-plugins:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin: [kinesis, kafka]
+    defaults:
+      run:
+        working-directory: go/plugins/${{ matrix.plugin }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ env.GO_VERSION_FILE }}
+          cache-dependency-path: ${{ env.GO_CACHE_PATHS }}
+      - run: go vet ./...
+      - run: go test -race -count=1 ./...
+
+  # The store against a real Postgres. Locally the store tests run on SQLite and skip this.
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: pw
+          POSTGRES_DB: ignatius
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ env.GO_VERSION_FILE }}
+          cache-dependency-path: ${{ env.GO_CACHE_PATHS }}
+      - name: store tests on SQLite and Postgres
+        working-directory: go
+        env:
+          IGNATIUS_TEST_POSTGRES_DSN: postgres://postgres:pw@127.0.0.1:5432/ignatius?sslmode=disable
+        run: go test -race -count=1 -v ./store
+
+  # The Kinesis sink against a real Kinesis API (the Floci emulator), reading the records back.
+  kinesis-floci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      floci:
+        image: floci/floci:latest
+        ports: ["4566:4566"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ env.GO_VERSION_FILE }}
+          cache-dependency-path: ${{ env.GO_CACHE_PATHS }}
+      - name: wait for the emulator
+        run: |
+          for _ in $(seq 1 60); do curl -s -o /dev/null http://127.0.0.1:4566/ && exit 0; sleep 1; done
+          echo "floci did not start" >&2; exit 1
+      - name: Kinesis integration tests
+        working-directory: go/plugins/kinesis
+        env:
+          IGNATIUS_TEST_KINESIS_ENDPOINT: http://127.0.0.1:4566
+        run: go test -count=1 -v -run Emulator ./...
+
+  # The Kafka sink against Amazon MSK as Floci emulates it (a real Redpanda broker). The script
+  # starts Floci itself and runs the test in a container on its Docker network, because the
+  # broker is reachable only there; the container reads this runner's module cache, offline.
+  kafka-msk-floci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ env.GO_VERSION_FILE }}
+          cache-dependency-path: ${{ env.GO_CACHE_PATHS }}
+      - name: populate the module cache the test container will use
+        working-directory: go/plugins/kafka
+        run: go mod download
+      - name: MSK integration test
+        working-directory: go
+        run: ./plugins/kafka/test-msk-floci.sh
+
+  # The Python SDK, including its interop tests against the Go gateway (which needs Go to build it).
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ env.GO_VERSION_FILE }}
+          cache-dependency-path: ${{ env.GO_CACHE_PATHS }}
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: python/uv.lock
+      - run: uv run --frozen pytest
+
+  # The Clef Worker's logic, with a fake AI binding (it has no npm dependencies).
+  clef-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: deploy/clef-worker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
+
+  # The images build. Nothing is pushed: publishing needs a registry decision.
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ignatius
+            dockerfile: Dockerfile
+          - name: ignatius-kinesis
+            dockerfile: plugins/kinesis/Dockerfile
+          - name: ignatius-kafka
+            dockerfile: plugins/kafka/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+      - name: build ${{ matrix.name }}
+        working-directory: go
+        run: docker build -f ${{ matrix.dockerfile }} -t ${{ matrix.name }}:ci .

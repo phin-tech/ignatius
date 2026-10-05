@@ -1,0 +1,106 @@
+{
+  "name": "an image request skips a tier that takes no images and is answered by the one that does",
+  "mode": "cascade",
+  "args": {
+    "tiers": [
+      {
+        "model": "jev",
+        "threshold": 0.5
+      },
+      "clef"
+    ]
+  },
+  "request": {
+    "state": "x",
+    "images": [
+      "aGk="
+    ],
+    "questions": {
+      "a": {
+        "type": "noul",
+        "instructions": "?"
+      },
+      "b": {
+        "type": "noul",
+        "instructions": "?"
+      }
+    }
+  },
+  "mock": {
+    "jev": {
+      "answers": {
+        "a": {
+          "type": "noul",
+          "noul": 0.99
+        },
+        "b": {
+          "type": "noul",
+          "noul": 0.99
+        }
+      }
+    },
+    "clef": {
+      "limits": {
+        "max_images": 4,
+        "max_questions": 64
+      },
+      "answers": {
+        "a": {
+          "type": "noul",
+          "noul": 0.9
+        },
+        "b": {
+          "type": "noul",
+          "noul": 0.1
+        }
+      }
+    }
+  },
+  "expect": {
+    "ok": true,
+    "answers": {
+      "a": {
+        "model": "clef",
+        "confidence": 0.8
+      },
+      "b": {
+        "model": "clef",
+        "confidence": 0.8
+      }
+    },
+    "failures": [
+      {
+        "model": "jev",
+        "error": {
+          "kind": "unsupported"
+        }
+      }
+    ],
+    "trace": [
+      {
+        "tier": 0,
+        "model": "jev",
+        "questions": [
+          "a",
+          "b"
+        ],
+        "escalated": [
+          "a",
+          "b"
+        ],
+        "error": {
+          "kind": "unsupported"
+        }
+      },
+      {
+        "tier": 1,
+        "model": "clef",
+        "questions": [
+          "a",
+          "b"
+        ],
+        "escalated": []
+      }
+    ]
+  }
+}

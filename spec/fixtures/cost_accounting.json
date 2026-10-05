@@ -1,0 +1,25 @@
+{
+  "name": "cost_usd per result and in total; unpriced models add nothing",
+  "mode": "fan_out",
+  "args": { "models": ["jev", "clef", "jeff"] },
+  "request": { "state": "x", "questions": { "q": { "type": "noul", "instructions": "?" } } },
+  "mock": {
+    "jev":  { "usage": { "input_tokens": 1000000, "output_tokens": 500000 },
+              "price": { "input_per_mtok": 0.042, "output_per_mtok": 0.0 },
+              "answers": { "q": { "type": "noul", "noul": 0.9 } } },
+    "clef": { "usage": { "input_tokens": 2000000, "output_tokens": 0 },
+              "price": { "input_per_mtok": 0.5 },
+              "answers": { "q": { "type": "noul", "noul": 0.8 } } },
+    "jeff": { "usage": { "input_tokens": 1000, "output_tokens": 10 },
+              "answers": { "q": { "type": "noul", "noul": 0.7 } } }
+  },
+  "expect": {
+    "ok": true,
+    "cost_usd": 1.042,
+    "results": [
+      { "model": "jev",  "cost_usd": 0.042 },
+      { "model": "clef", "cost_usd": 1.0 },
+      { "model": "jeff" }
+    ]
+  }
+}

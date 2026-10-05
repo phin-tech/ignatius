@@ -1,0 +1,87 @@
+{
+  "name": "a request with more questions than a model's limit is split across calls and merged",
+  "mode": "single",
+  "args": {
+    "model": "m"
+  },
+  "request": {
+    "state": "x",
+    "questions": {
+      "q1": {
+        "type": "noul",
+        "instructions": "?"
+      },
+      "q2": {
+        "type": "noul",
+        "instructions": "?"
+      },
+      "q3": {
+        "type": "noul",
+        "instructions": "?"
+      },
+      "q4": {
+        "type": "noul",
+        "instructions": "?"
+      },
+      "q5": {
+        "type": "noul",
+        "instructions": "?"
+      }
+    }
+  },
+  "mock": {
+    "m": {
+      "limits": {
+        "max_questions": 2
+      },
+      "usage": {
+        "input_tokens": 4,
+        "output_tokens": 1
+      },
+      "answers": {
+        "q1": {
+          "type": "noul",
+          "noul": 0.75
+        },
+        "q2": {
+          "type": "noul",
+          "noul": 0.75
+        },
+        "q3": {
+          "type": "noul",
+          "noul": 0.75
+        },
+        "q4": {
+          "type": "noul",
+          "noul": 0.75
+        },
+        "q5": {
+          "type": "noul",
+          "noul": 0.75
+        }
+      }
+    }
+  },
+  "expect": {
+    "ok": true,
+    "results": [
+      {
+        "model": "m",
+        "usage": {
+          "input_tokens": 12,
+          "output_tokens": 3
+        }
+      }
+    ],
+    "answers": {
+      "q1": {
+        "model": "m",
+        "confidence": 0.5
+      },
+      "q5": {
+        "model": "m",
+        "confidence": 0.5
+      }
+    }
+  }
+}

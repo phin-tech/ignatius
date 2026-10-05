@@ -1,0 +1,49 @@
+{
+  "name": "a model with confidence = derived is judged by its probabilities, not by the number it reports",
+  "mode": "cascade",
+  "args": {
+    "tiers": [
+      { "model": "cheap", "threshold": { "choice": 0.6, "score": 0.4, "noul": 0.5 } },
+      { "model": "smart" }
+    ]
+  },
+  "request": {
+    "state": "x",
+    "questions": {
+      "dept":    { "type": "choice", "instructions": "?", "criteria": ["a", "b", "c"] },
+      "urgency": { "type": "score",  "instructions": "?", "criteria": ["l0", "l1", "l2", "l3"] },
+      "urgent":  { "type": "noul",   "instructions": "?" }
+    }
+  },
+  "mock": {
+    "cheap": {
+      "confidence": "derived",
+      "answers": {
+        "dept":    { "type": "choice", "choice": "a", "probabilities": { "a": 0.7, "b": 0.2, "c": 0.1 }, "confidence": 0.99 },
+        "urgency": { "type": "score", "score": 2.0, "probabilities": { "0": 0.1, "1": 0.2, "2": 0.6, "3": 0.1 }, "confidence": 0.99 },
+        "urgent":  { "type": "noul", "noul": 0.8 }
+      }
+    },
+    "smart": {
+      "answers": {
+        "dept": { "type": "choice", "choice": "b", "probabilities": { "a": 0.1, "b": 0.8, "c": 0.1 }, "confidence": 0.8 }
+      }
+    }
+  },
+  "expect": {
+    "answers": {
+      "dept":    { "model": "smart", "choice": "b", "confidence": 0.8 },
+      "urgency": { "model": "cheap", "confidence": 0.5, "native_confidence": 0.99 },
+      "urgent":  { "model": "cheap", "confidence": 0.6 }
+    },
+    "trace": [
+      { "tier": 0, "model": "cheap", "questions": ["dept", "urgency", "urgent"], "escalated": ["dept"],
+        "detail": [
+          { "id": "dept",    "confidence": 0.55, "threshold": 0.6, "escalated": true },
+          { "id": "urgency", "confidence": 0.5,  "threshold": 0.4, "escalated": false },
+          { "id": "urgent",  "confidence": 0.6,  "threshold": 0.5, "escalated": false }
+        ] },
+      { "tier": 1, "model": "smart", "questions": ["dept"], "escalated": [] }
+    ]
+  }
+}

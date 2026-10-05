@@ -1,0 +1,47 @@
+# Ignatius gateway config for the dunce-union self-hosting kit. URLs are compose
+# service names. For models hosted elsewhere, add entries with any base_url and
+# auth (api_key_env, optionally auth_header) and delete what you don't run.
+listen = ":8081"
+api_key_env = "IGNATIUS_API_KEY"
+default_route = "laya"
+
+[models.laya]
+provider = "systemone"
+base_url = "http://laya:8000"
+model = "jev-latest"
+api_key_env = "DUNCE_API_KEY"
+timeout_ms = 8000
+
+[models.jeff]
+provider = "systemone"
+base_url = "http://jeff:8000"
+model = "jev-latest"
+api_key_env = "DUNCE_API_KEY"
+timeout_ms = 8000
+
+[models.kev]
+provider = "systemone"
+base_url = "http://kev:8000"
+model = "jev-latest"
+api_key_env = "DUNCE_API_KEY"
+timeout_ms = 8000
+
+[models.jeff-gemma]
+provider = "systemone"
+base_url = "http://jeff-gemma:8000"
+model = "jev-latest"
+api_key_env = "DUNCE_API_KEY"
+timeout_ms = 8000
+
+# Profiles name an intent instead of a model, so callers and routes do not change when
+# you swap what "best" means: change one line here (or edit it on the status page when
+# [admin] edit_profiles is on). Routes can be edited there too with edit_routes.
+[profiles]
+fast = "jeff"
+best = "laya"
+
+# Named routes, selectable as `model = "<name>"` (e.g. via the typesafe-sdk).
+# Inline routes work too: "cascade:fast>best", "fan-out:jeff,kev|vote".
+[routes.fast_then_better]
+mode = "cascade"
+tiers = [ { model = "fast", threshold = 0.8 }, "best" ]

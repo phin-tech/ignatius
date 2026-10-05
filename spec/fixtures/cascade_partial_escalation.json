@@ -1,0 +1,121 @@
+{
+  "name": "cascade escalates only unsettled questions",
+  "mode": "cascade",
+  "args": {
+    "tiers": [
+      "jeff",
+      "jev"
+    ],
+    "threshold": 0.8
+  },
+  "request": {
+    "state": "Refund request for a broken lamp, customer is angry.",
+    "questions": {
+      "urgent": {
+        "type": "noul",
+        "instructions": "Is this urgent?"
+      },
+      "category": {
+        "type": "choice",
+        "instructions": "Category?",
+        "criteria": [
+          "billing",
+          "shipping",
+          "product"
+        ]
+      }
+    }
+  },
+  "mock": {
+    "jeff": {
+      "answers": {
+        "urgent": {
+          "type": "noul",
+          "noul": 0.97
+        },
+        "category": {
+          "type": "choice",
+          "choice": "product",
+          "probabilities": {
+            "billing": 0.2,
+            "shipping": 0.2,
+            "product": 0.6
+          },
+          "confidence": 0.6
+        }
+      }
+    },
+    "jev": {
+      "answers": {
+        "category": {
+          "type": "choice",
+          "choice": "product",
+          "probabilities": {
+            "billing": 0.02,
+            "shipping": 0.03,
+            "product": 0.95
+          },
+          "confidence": 0.95
+        }
+      }
+    }
+  },
+  "expect": {
+    "mode": "cascade",
+    "answers": {
+      "urgent": {
+        "model": "jeff",
+        "noul": 0.97,
+        "confidence": 0.94
+      },
+      "category": {
+        "model": "jev",
+        "choice": "product",
+        "confidence": 0.95
+      }
+    },
+    "trace": [
+      {
+        "tier": 0,
+        "model": "jeff",
+        "questions": [
+          "category",
+          "urgent"
+        ],
+        "escalated": [
+          "category"
+        ],
+        "detail": [
+          {
+            "id": "category",
+            "confidence": 0.6,
+            "threshold": 0.8,
+            "escalated": true
+          },
+          {
+            "id": "urgent",
+            "confidence": 0.94,
+            "threshold": 0.8,
+            "escalated": false
+          }
+        ]
+      },
+      {
+        "tier": 1,
+        "model": "jev",
+        "questions": [
+          "category"
+        ],
+        "escalated": [],
+        "detail": [
+          {
+            "id": "category",
+            "confidence": 0.95,
+            "escalated": false
+          }
+        ]
+      }
+    ],
+    "failures": []
+  }
+}

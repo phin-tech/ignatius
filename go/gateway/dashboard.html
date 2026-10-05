@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ignatius status</title>
+<style>
+  :root { --bg:#faf8f4; --fg:#1f1d1a; --muted:#6f6a62; --line:#e4dfd5; --card:#fff; --ok:#2e7d32; --bad:#c62828; --warn:#b26a00; --acc:#7a4b1f; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#161513; --fg:#ece8e0; --muted:#9a948a; --line:#2c2a26; --card:#1e1c19; --ok:#66bb6a; --bad:#ef5350; --warn:#ffa726; --acc:#d9a066; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 ui-sans-serif,system-ui,-apple-system,sans-serif; }
+  main { max-width:960px; margin:0 auto; padding:24px 16px 48px; }
+  header { display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; }
+  h1 { font-size:20px; margin:0; } h1 span { color:var(--acc); }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:28px 0 8px; font-weight:600; }
+  .meta { color:var(--muted); font-size:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:8px; overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; }
+  th,td { text-align:left; padding:8px 12px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { font-size:12px; color:var(--muted); font-weight:600; } tr:last-child td { border-bottom:0; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; }
+  code,.mono { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px; }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; background:var(--muted); }
+  .ready { background:var(--ok); } .not_ready, .circuit_open { background:var(--bad); } .unknown { background:var(--warn); }
+  .summary { margin:8px 2px 0; color:var(--muted); font-size:13px; } .summary b { color:var(--fg); font-weight:600; }
+  .ok { color:var(--ok); } .bad { color:var(--bad); }
+  .empty { padding:14px 12px; color:var(--muted); }
+  tr.req { cursor:pointer; }
+  tr.req:hover td { background:color-mix(in srgb, var(--fg) 5%, transparent); }
+  tr.req:focus-visible { outline:2px solid var(--acc); outline-offset:-2px; }
+  .caret { display:inline-block; width:1em; color:var(--muted); transition:transform .12s; }
+  tr.open .caret { transform:rotate(90deg); }
+  td.detail { white-space:normal; background:var(--bg); padding:12px 16px 14px 32px; }
+  .call { margin-bottom:12px; } .call:last-child { margin-bottom:0; }
+  .call h4 { margin:0 0 4px; font-size:13px; font-weight:600; }
+  .call h4 .sub { color:var(--muted); font-weight:400; }
+  .qline { padding-left:12px; font-size:13px; color:var(--muted); }
+  .qline b { color:var(--fg); font-weight:500; }
+  .esc { color:var(--warn); } .settled { color:var(--ok); } .fail { color:var(--bad); }
+  .agree { margin-top:10px; padding-top:10px; border-top:1px dashed var(--line); font-size:13px; color:var(--muted); }
+  .agree .t { font-weight:600; color:var(--fg); }
+  select, input[type=text] { font:inherit; padding:3px 6px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--fg); max-width:200px; }
+  input[type=text] { width:150px; }
+  select:focus-visible, input:focus-visible, button.act:focus-visible { outline:2px solid var(--acc); outline-offset:1px; }
+  button.act { font:inherit; font-size:12.5px; padding:3px 10px; margin-right:6px; border-radius:6px; border:1px solid var(--line); background:var(--card); color:var(--fg); cursor:pointer; }
+  button.act:hover { border-color:var(--acc); }
+  button.armed { background:var(--warn); border-color:var(--warn); color:#1a1200; font-weight:600; }
+  .note { margin:8px 2px 0; color:var(--muted); font-size:13px; }
+  .msg { margin:6px 2px 0; min-height:1.3em; font-size:13px; } .msg.good { color:var(--ok); } .msg.bad { color:var(--bad); }
+  .audit { margin:10px 2px 0; font-size:12.5px; color:var(--muted); } .audit div { padding:1px 0; }
+  .muted { color:var(--muted); }
+  td .sub { color:var(--muted); font-size:12px; margin-top:2px; }
+  .editor { background:var(--bg); padding:14px 16px 16px 32px; white-space:normal; }
+  .editor select { max-width:360px; }
+  .editor h4 { margin:0 0 8px; font-size:13px; } .editor .help { color:var(--muted); font-size:12.5px; margin:2px 0 8px; max-width:640px; }
+  .editor label { display:inline-block; margin:0 8px 6px 0; font-size:13px; color:var(--muted); }
+  .tierrow { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:4px 0; }
+  .tierrow .n { color:var(--muted); width:22px; text-align:right; font-size:12.5px; }
+  .tierrow .final { color:var(--muted); font-size:12.5px; }
+  input[type=number] { font:inherit; width:84px; padding:3px 6px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--fg); }
+  input[type=number]:disabled { opacity:.55; }
+  button.mini { font:inherit; font-size:12px; padding:1px 7px; border-radius:5px; border:1px solid var(--line); background:var(--card); color:var(--fg); cursor:pointer; }
+  button.mini:disabled { opacity:.35; cursor:default; }
+  .how { color:var(--fg); } .how .dim { color:var(--muted); }
+  textarea { font:inherit; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px; width:100%; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--fg); resize:vertical; }
+  textarea:focus-visible { outline:2px solid var(--acc); outline-offset:1px; }
+  .evbox { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:14px 16px 16px; }
+  .evbox .help { color:var(--muted); font-size:12.5px; margin:0 0 10px; max-width:680px; }
+  .evbox label.block { display:block; margin:10px 0 4px; font-size:13px; color:var(--muted); }
+  .evbox .row2 { display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin:10px 0 4px; font-size:13px; color:var(--muted); }
+  .evres h3 { margin:18px 0 6px; font-size:13px; } .evres p { margin:3px 0; font-size:13px; color:var(--muted); } .evres p b { color:var(--fg); font-weight:600; }
+  .evres .verdict { color:var(--fg); }
+  #gate { display:none; margin:24px 0; padding:16px; background:var(--card); border:1px solid var(--line); border-radius:8px; }
+  #gate input { font:inherit; padding:6px 8px; width:260px; max-width:100%; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--fg); }
+  #gate button { font:inherit; padding:6px 12px; border-radius:6px; border:1px solid var(--line); background:var(--card); color:var(--fg); cursor:pointer; }
+  #err { color:var(--bad); margin-top:8px; min-height:1em; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1><span>Ignatius</span> status</h1>
+    <div class="meta" id="meta">connecting…</div>
+  </header>
+  <div id="gate">
+    <label>API key <input id="key" type="password" autocomplete="off" placeholder="Bearer token"></label>
+    <button id="save">Connect</button>
+    <div id="loginbox" hidden>
+      <p class="meta">or sign in</p>
+      <label>Username <input id="user" autocomplete="username"></label>
+      <label>Password <input id="pass" type="password" autocomplete="current-password"></label>
+      <button id="signin">Sign in</button>
+    </div>
+    <div id="err"></div>
+  </div>
+  <div id="content" hidden>
+    <h2>Models</h2>
+    <div class="card"><table id="models"></table></div>
+    <div class="summary" id="summary"></div>
+    <h2>Profiles</h2>
+    <div class="card"><table id="profiles"></table></div>
+    <div class="note" id="profnote"></div>
+    <div class="msg" id="profmsg" role="status" aria-live="polite"></div>
+    <div class="audit" id="profaudit"></div>
+    <h2>Routes</h2>
+    <div class="card"><table id="routes"></table></div>
+    <div class="note" id="routenote"></div>
+    <div class="msg" id="routemsg" role="status" aria-live="polite"></div>
+    <div id="eval-section" hidden>
+      <h2>Evaluate</h2>
+      <div class="evbox">
+        <p class="help">Run a labeled test set through one or more routes and see how each does: accuracy with a confidence interval, what each tier of a cascade contributed, cost and latency, and a verdict against the first route. <b>Every run makes real model calls.</b> The test set stays in this browser and in the gateway's memory for the run only.</p>
+        <label class="block" for="evroutes">Routes, one per line (a route, profile, model or inline route such as <code>cascade:cheap@0.8&gt;strong</code>); the first is the baseline</label>
+        <textarea id="evroutes" rows="3" spellcheck="false" placeholder="strong&#10;cascade:cheap@0.8>strong"></textarea>
+        <label class="block" for="evdata">Test set: JSONL, one item per line, with the gold answer per question</label>
+        <textarea id="evdata" rows="7" spellcheck="false" placeholder='{"id":"t1","state":"I was charged twice","questions":{"billing":{"type":"noul","instructions":"Is this about billing?"}},"gold":{"billing":true}}'></textarea>
+        <div class="row2">
+          <input type="file" id="evfile" accept=".jsonl,.json,.txt" aria-label="Load a test set from a file">
+          <label><input type="checkbox" id="evsweep"> also sweep the cascade thresholds</label>
+          <label>Concurrency <input type="number" id="evconc" min="1" value="4"></label>
+        </div>
+        <p><button class="act" id="evrun">Run</button><button class="act" id="evcancel" hidden>Cancel</button></p>
+        <div class="msg" id="evmsg" role="status" aria-live="polite"></div>
+        <div class="evres" id="evout"></div>
+      </div>
+    </div>
+    <div id="clients-section" hidden>
+      <h2>Clients</h2>
+      <div class="card"><table id="clients"></table></div>
+    </div>
+    <div id="keys-section" hidden>
+      <h2>API keys</h2>
+      <div class="card"><table id="keys"></table></div>
+      <div class="note">
+        <label>Name <input id="knew" placeholder="ci-bot" autocomplete="off"></label>
+        <label>Requests/min <input id="krate" type="number" min="1" placeholder="inherit" style="width:6em"></label>
+        <label>Expires in (hours) <input id="kexp" type="number" min="1" placeholder="never" style="width:6em"></label>
+        <button id="kmake">Create key</button>
+      </div>
+      <div class="msg" id="keymsg" role="status" aria-live="polite"></div>
+    </div>
+    <p id="signout-row"><button id="signout" hidden>Sign out</button></p>
+    <h2>Recent requests</h2>
+    <div class="card"><table id="recent"></table></div>
+    <p class="meta">Click a request for its detail. Counters are in memory and reset on restart. Request content and answer values are never stored.</p>
+  </div>
+</main>
+<script>
+(function () {
+  var KEY_NAME = "ignatius_key";
+  function getKey() { try { return sessionStorage.getItem(KEY_NAME) || ""; } catch (e) { return ""; } }
+  function setKey(v) { try { sessionStorage.setItem(KEY_NAME, v); } catch (e) {} }
+  var $ = function (id) { return document.getElementById(id); };
+
+  function el(tag, text, cls) {
+    var e = document.createElement(tag);
+    if (text !== undefined && text !== null) e.textContent = String(text);
+    if (cls) e.className = cls;
+    return e;
+  }
+  function row(cells) {
+    var tr = document.createElement("tr");
+    cells.forEach(function (c) { tr.appendChild(c); });
+    return tr;
+  }
+  function fill(table, head, rows, emptyMsg) {
+    table.textContent = "";
+    var thead = document.createElement("thead");
+    thead.appendChild(row(head.map(function (h) { return el("th", h[0], h[1]); })));
+    table.appendChild(thead);
+    var tbody = document.createElement("tbody");
+    rows.forEach(function (r) { tbody.appendChild(row(r)); });
+    if (!rows.length) { var td = el("td", emptyMsg, "empty"); td.colSpan = head.length; tbody.appendChild(row([td])); }
+    table.appendChild(tbody);
+  }
+  function api(path) {
+    return fetch(path, { headers: getKey() ? { Authorization: "Bearer " + getKey() } : {} });
+  }
+  function fmtFailures(f) {
+    var parts = Object.keys(f || {}).sort().map(function (k) { return k + " " + f[k]; });
+    return parts.length ? parts.join(", ") : "–";
+  }
+  function planSummary(p) {
+    if (p.mode === "single") return p.model || "";
+    if (p.mode === "fan_out") return (p.models || []).join(", ") + (p.reduce ? " | " + p.reduce : "");
+    return (p.tiers || []).map(function (t) { return typeof t === "string" ? t : t.model; }).join(" > ");
+  }
+
+  function usd(x) {
+    if (x === null || x === undefined) return "–";
+    var n = Number(x);
+    return (n < 0 ? "-$" : "$") + Math.abs(n).toFixed(Math.abs(n) < 1 ? 4 : 2);
+  }
+  function statusLabel(s) { return s === "circuit_open" ? "circuit open" : s.replace("_", " "); }
+
+  function render(stats, routes) {
+    $("eval-section").hidden = !stats.eval_enabled;
+    if (stats.eval_enabled && !evAttached) { evAttached = true; evAttach(); }
+    $("meta").textContent = "up " + Math.floor(stats.uptime_s / 60) + "m · refreshed " + new Date().toLocaleTimeString();
+    fill($("models"),
+      [["Model"], ["Profiles"], ["Status"], ["Calls", "n"], ["Cached questions", "n"], ["Failures"], ["Spend", "n"], ["p50 ms", "n"], ["p95 ms", "n"]],
+      stats.models.map(function (m) {
+        // the alias, and under it what it actually is: the upstream model and the host it calls
+        var first = el("td"); first.appendChild(el("div", m.id, "mono"));
+        var what = [m.upstream_model, m.host].filter(Boolean).join(" @ ");
+        if (what) first.appendChild(el("div", what, "sub"));
+        var st = el("td"); var d = el("span", "", "dot " + m.status); st.appendChild(d); st.appendChild(document.createTextNode(statusLabel(m.status)));
+        return [first, el("td", (m.profiles || []).join(", ") || "–", "muted"), st, el("td", m.calls, "n"), el("td", m.cached || 0, "n"), el("td", fmtFailures(m.failures)),
+                el("td", m.cost_usd ? usd(m.cost_usd) : "–", "n"), el("td", m.p50_ms, "n"), el("td", m.p95_ms, "n")];
+      }), "No models configured.");
+    var sum = $("summary"); sum.textContent = "";
+    var parts = [];
+    if (stats.total_cost_usd) parts.push(["Spend ", usd(stats.total_cost_usd)]);
+    if (stats.cascade_savings_estimate_usd !== null && stats.cascade_savings_estimate_usd !== undefined) {
+      var sv = stats.cascade_savings_estimate_usd;
+      parts.push([sv >= 0 ? "Cascade saved about " : "Cascade cost about ", usd(Math.abs(sv)) + (sv >= 0 ? "" : " more") + " than always using the final tier (estimate)"]);
+    }
+    parts.forEach(function (p, i) {
+      if (i) sum.appendChild(document.createTextNode("  ·  "));
+      sum.appendChild(document.createTextNode(p[0])); sum.appendChild(el("b", p[1]));
+    });
+    var named = (stats.clients || []).filter(function (c) { return c.name !== "anonymous"; });
+    $("clients-section").hidden = named.length === 0;
+    if (named.length) fill($("clients"), [["Client"], ["Requests", "n"], ["Rate limited", "n"], ["Spend", "n"]],
+      named.map(function (c) { return [el("td", c.name, "mono"), el("td", c.requests, "n"), el("td", c.rate_limited || 0, "n"), el("td", c.cost_usd ? usd(c.cost_usd) : "–", "n")]; }), "");
+    routesView = routes;
+    if (!busyRoutes()) renderRoutes();
+    lastRecent = stats.recent;
+    renderRecent();
+  }
+
+
+  // ---- Profiles and routes: view and, when the gateway allows it, edit ---------------------
+  // The page refreshes every 5s. A table the user is working in is NOT redrawn (it would
+  // close an open dropdown or drop focus from a number being typed), and a change is sent
+  // with the version the user was LOOKING at, so a quiet background refresh can never defeat
+  // the "someone else changed this" check.
+  var prof = null, routesView = null;      // the latest data from the server
+  // The moment a user starts working in a table (picks a value, opens the editor, arms a
+  // button) the table is drawn from a FROZEN copy of the data, and that copy's version is what
+  // gets sent. A redraw must never adopt a newer version: that would defeat the check that
+  // stops us overwriting someone else's change.
+  var profFrozen = null, routesFrozen = null;
+  var pending = {}, addDraft = { name: "", target: "" };
+  var draft = null;                         // the open route editor: { name, isNew, plan }
+  var armedKey = "", armedTimer = null;
+
+  function apiSend(method, path, body) {
+    var h = { "Content-Type": "application/json" };
+    if (getKey()) h.Authorization = "Bearer " + getKey();
+    return fetch(path, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined });
+  }
+  function say(id, kind, text) { var m = $(id); m.className = "msg " + kind; m.textContent = text; }
+  function inside(id) { var a = document.activeElement; return !!(a && $(id).contains(a)); }
+  function profData() { return profFrozen || prof; }
+  function routesData() { return routesFrozen || routesView; }
+  function freezeProf() { if (!profFrozen) profFrozen = prof; }
+  function freezeRoutes() { if (!routesFrozen) routesFrozen = routesView; }
+  // end of an interaction: go back to showing the latest
+  function settle() {
+    var a = armedKey.charAt(0);
+    if (!Object.keys(pending).length && addDraft.name === "" && a !== "p") profFrozen = null;
+    if (!draft && a !== "r") routesFrozen = null;
+  }
+  function busyProfiles() { return profFrozen !== null || inside("profiles"); }
+  function busyRoutes() { return routesFrozen !== null || inside("routes"); }
+
+  function loadProfiles() {
+    return api("/v1/profiles").then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { if (j) { prof = j; if (!busyProfiles()) renderProfiles(); } }).catch(function () {});
+  }
+  function loadRoutes() {
+    return api("/v1/routes").then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { if (j) { routesView = j; if (!busyRoutes()) renderRoutes(); } }).catch(function () {});
+  }
+  function refreshAll() { return Promise.all([loadProfiles(), loadRoutes()]); }
+  function resetDrafts() { pending = {}; addDraft = { name: "", target: "" }; draft = null; armedKey = ""; clearTimeout(armedTimer); profFrozen = null; routesFrozen = null; }
+
+  // The first click arms a change (the button turns amber and names it); the second applies
+  // it. A change reaches every caller, so it should not be a single click.
+  function twoStep(key, msgId, run) {
+    if (armedKey !== key) {
+      if (key.charAt(0) === "p") freezeProf(); else freezeRoutes();
+      armedKey = key; clearTimeout(armedTimer);
+      armedTimer = setTimeout(function () { armedKey = ""; settle(); renderProfiles(); renderRoutes(); }, 8000);
+      say(msgId, "", ""); renderProfiles(); renderRoutes(); return;
+    }
+    armedKey = ""; clearTimeout(armedTimer); run();
+  }
+  function send(method, path, body, msgId, okText) {
+    return apiSend(method, path, body)
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, body: j }; }); })
+      .then(function (res) {
+        if (res.ok) {
+          resetDrafts(); say(msgId, "good", res.body.changed ? okText + " (version " + res.body.version + ")" : "No change: it already was that way.");
+        } else if (res.body.error && res.body.error.type === "version_conflict") {
+          resetDrafts(); say(msgId, "bad", "This was changed elsewhere, so nothing was saved. The latest is shown now.");
+        } else {
+          say(msgId, "bad", res.body.error ? res.body.error.message : "Request failed (HTTP " + res.status + ").");
+          renderProfiles(); renderRoutes(); return;
+        }
+        return refreshAll();
+      })
+      .catch(function (e) { say(msgId, "bad", "Request failed: " + e.message); });
+  }
+
+  function btn(text, key, onclick, aria) {
+    var b = el("button", text, "act" + (armedKey === key ? " armed" : ""));
+    b.type = "button"; b.setAttribute("aria-label", aria || text); b.onclick = onclick; return b;
+  }
+  function mini(text, aria, onclick, disabled) {
+    var b = el("button", text, "mini"); b.type = "button"; b.setAttribute("aria-label", aria); b.onclick = onclick; b.disabled = !!disabled; return b;
+  }
+  // options: real models under one heading, profiles (intents) under another
+  function modelSelect(choices, value, onchange, label, withProfiles) {
+    var s = document.createElement("select"); s.setAttribute("aria-label", label);
+    function group(title, names) {
+      if (!names || !names.length) return;
+      var g = document.createElement("optgroup"); g.label = title;
+      names.forEach(function (a) { var o = el("option", a); o.value = a; if (a === value) o.selected = true; g.appendChild(o); });
+      s.appendChild(g);
+    }
+    if (withProfiles) { group("Models", choices.aliases); group("Profiles", choices.profiles); }
+    else (choices.aliases || []).forEach(function (a) { var o = el("option", a); o.value = a; if (a === value) o.selected = true; s.appendChild(o); });
+    s.onchange = function () { onchange(s.value); }; return s;
+  }
+
+  // ---------- profiles ----------
+  function renderProfiles() {
+    var P = profData();
+    if (!P) return;
+    var editable = P.editable, choices = { aliases: P.aliases };
+    var rows = (P.profiles || []).map(function (p) {
+      var chosen = pending[p.name] !== undefined ? pending[p.name] : p.target;
+      var tdModel = el("td");
+      tdModel.appendChild(editable
+        ? modelSelect(choices, chosen, function (v) { freezeProf(); if (v === p.target) delete pending[p.name]; else pending[p.name] = v; armedKey = ""; settle(); renderProfiles(); }, "Model for profile " + p.name, false)
+        : el("span", p.target, "mono"));
+      var st = el("td"); st.appendChild(el("span", "", "dot " + (p.status || "unknown"))); st.appendChild(document.createTextNode(statusLabel(p.status || "unknown")));
+      var acts = el("td");
+      if (editable) {
+        if (chosen !== p.target) {
+          var k = "pset|" + p.name + "|" + chosen;
+          acts.appendChild(btn(armedKey === k ? "Confirm: " + p.name + " → " + chosen : "Save", k, function () {
+            twoStep(k, "profmsg", function () { send("PUT", "/v1/profiles/" + encodeURIComponent(p.name), { target: chosen, expected_version: profData().version }, "profmsg", p.name + " now points at " + chosen); });
+          }, "Save " + p.name));
+        }
+        if (p.source === "override") {
+          var kr = "prev|" + p.name;
+          acts.appendChild(btn(armedKey === kr ? "Confirm: back to " + p.config_target : "Revert to config", kr, function () {
+            twoStep(kr, "profmsg", function () { send("DELETE", "/v1/profiles/" + encodeURIComponent(p.name) + "?expected_version=" + profData().version, null, "profmsg", p.name + " is back to " + p.config_target); });
+          }, "Revert " + p.name + " to its config value"));
+        }
+        if (p.source === "added") {
+          var kd = "pdel|" + p.name;
+          acts.appendChild(btn(armedKey === kd ? "Confirm delete" : "Delete", kd, function () {
+            twoStep(kd, "profmsg", function () { send("DELETE", "/v1/profiles/" + encodeURIComponent(p.name) + "?expected_version=" + profData().version, null, "profmsg", "Deleted " + p.name); });
+          }, "Delete profile " + p.name));
+        }
+      }
+      return [el("td", p.name, "mono"), tdModel, el("td", (p.source || "") + (p.config_target ? " (config: " + p.config_target + ")" : ""), "muted"), st, acts];
+    });
+    if (editable) {
+      var nameIn = document.createElement("input"); nameIn.type = "text"; nameIn.placeholder = "new profile name"; nameIn.maxLength = 64;
+      nameIn.setAttribute("aria-label", "Name of a new profile"); nameIn.value = addDraft.name;
+      nameIn.oninput = function () { freezeProf(); addDraft.name = nameIn.value; armedKey = ""; settle(); };
+      var tdN = el("td"); tdN.appendChild(nameIn);
+      var chosenNew = addDraft.target || (P.aliases || [])[0] || "";
+      var newSel = modelSelect(choices, chosenNew, function (v) { freezeProf(); addDraft.target = v; armedKey = ""; }, "Model for the new profile", false);
+      var tdM = el("td"); tdM.appendChild(newSel);
+      var tdA = el("td"), ka = "padd|" + addDraft.name + "|" + chosenNew;
+      tdA.appendChild(btn(armedKey === ka ? "Confirm: add " + addDraft.name + " → " + chosenNew : "Add profile", ka, function () {
+        // read what is on screen NOW: the dropdown and the name box change without a redraw
+        var nm = nameIn.value.trim(), tg = newSel.value; addDraft.name = nm; addDraft.target = tg;
+        if (!nm) { say("profmsg", "bad", "Give the new profile a name first."); return; }
+        var key = "padd|" + nm + "|" + tg;
+        twoStep(key, "profmsg", function () { send("PUT", "/v1/profiles/" + encodeURIComponent(nm), { target: tg, expected_version: profData().version }, "profmsg", nm + " now points at " + tg); });
+      }, "Add a profile"));
+      rows.push([tdN, tdM, el("td", ""), el("td", ""), tdA]);
+    }
+    fill($("profiles"), [["Profile"], ["Model"], ["Source"], ["Status"], [""]], rows, "No profiles configured.");
+    var parts = [];
+    if (!editable) parts.push("Read-only. Set [admin] edit_profiles = true in the config to change profiles here.");
+    else {
+      parts.push("A change applies to the next request, for every caller of that profile.");
+      if (!P.persisted) parts.push("Edits are kept in memory only and are lost on restart; set [admin] state_file to save them.");
+    }
+    $("profnote").textContent = parts.join(" ");
+    var audit = $("profaudit"); audit.textContent = "";
+    (P.changes || []).slice(0, 8).forEach(function (c) {
+      audit.appendChild(el("div", new Date(c.time).toLocaleTimeString() + "  " + c.actor + "  " + c.op + " " + c.kind + " " + c.name + ": " + (c.from || "–") + " → " + (c.to || "removed") + "  (v" + c.version + ")"));
+    });
+  }
+
+  // ---------- routes ----------
+  function f2s(x) { return Number(x).toFixed(2); }
+  function thrText(t, dflt) {
+    if (t === undefined || t === null) return "≥ " + f2s(dflt) + " (default)";
+    return typeof t === "number" ? "≥ " + f2s(t) : "per question type";
+  }
+  // The route in words: the thing the table used to hide behind "fast > best".
+  function describePlan(p, dflt) {
+    var d = typeof p.threshold === "number" ? p.threshold : dflt;
+    if (p.mode === "single") return "always " + p.model;
+    if (p.mode === "fan_out") {
+      var red = !p.reduce || p.reduce === "none" ? "return every answer" : "combine by " + p.reduce.replace("_", " ");
+      return "ask " + (p.models || []).join(", ") + " together; " + red + (p.min_success ? "; at least " + p.min_success + " must answer" : "");
+    }
+    var tiers = p.tiers || [];
+    return tiers.map(function (t, i) {
+      return i === tiers.length - 1 ? t.model + " (final: answers what is left)" : t.model + " (a question stays if confidence " + thrText(t.threshold, d) + ")";
+    }).join("  →  ");
+  }
+  function deepCopy(o) { return JSON.parse(JSON.stringify(o)); }
+
+  function openEditor(name, plan, isNew) {
+    armedKey = ""; freezeRoutes();
+    draft = { name: name, isNew: isNew, plan: deepCopy(plan) };
+    var p = draft.plan; if (p.mode === "cascade" && !p.tiers) p.tiers = []; if (p.mode === "fan_out" && !p.models) p.models = [];
+    renderRoutes();
+  }
+  function convertMode(p, to) {
+    var members = p.mode === "single" ? [p.model] : p.mode === "fan_out" ? (p.models || []) : (p.tiers || []).map(function (t) { return t.model; });
+    var first = members[0] || ((routesData().choices || {}).aliases || [])[0] || "";
+    p.mode = to;
+    if (to === "single") p.model = first;
+    if (to === "fan_out") { p.models = members.length ? members : [first]; }
+    if (to === "cascade") { p.tiers = (members.length ? members : [first]).map(function (m) { return { model: m }; }); }
+  }
+  function planForServer(p) {
+    var out = { mode: p.mode };
+    if (p.mode === "single") out.model = p.model;
+    if (p.mode === "fan_out") { out.models = (p.models || []).slice(); if (p.reduce && p.reduce !== "none") out.reduce = p.reduce; if (p.min_success) out.min_success = p.min_success; }
+    if (p.mode === "cascade") {
+      out.tiers = (p.tiers || []).map(function (t) { return t.threshold === undefined || t.threshold === null ? { model: t.model } : { model: t.model, threshold: t.threshold }; });
+      if (p.threshold !== undefined && p.threshold !== null) out.threshold = p.threshold;
+    }
+    if (p.timeout_ms) out.timeout_ms = p.timeout_ms;
+    return out;
+  }
+  function numberInput(value, placeholder, onchange, label) {
+    var i = document.createElement("input"); i.type = "number"; i.min = "0"; i.max = "1"; i.step = "0.05";
+    i.placeholder = placeholder; i.setAttribute("aria-label", label);
+    if (typeof value === "number") i.value = value;
+    i.oninput = function () { onchange(i.value === "" ? null : Number(i.value)); armedKey = ""; };
+    return i;
+  }
+
+  function renderEditor() {
+    var box = el("div", "", "editor"), p = draft.plan, ch = routesData().choices || {};
+    box.appendChild(el("h4", draft.isNew ? "New route" : "Edit route " + draft.name));
+    if (draft.isNew) {
+      var nm = document.createElement("input"); nm.type = "text"; nm.placeholder = "route name"; nm.maxLength = 64; nm.value = draft.name;
+      nm.setAttribute("aria-label", "Name of the new route"); nm.oninput = function () { draft.name = nm.value; armedKey = ""; };
+      var l = el("label", "Name "); l.appendChild(nm); box.appendChild(l);
+    }
+    var ms = document.createElement("select"); ms.setAttribute("aria-label", "Route mode");
+    [["cascade", "cascade: cheap first, escalate when unsure"], ["fan_out", "fan out: ask several, combine"], ["single", "single: always one model"]].forEach(function (m) {
+      var o = el("option", m[1]); o.value = m[0]; if (m[0] === p.mode) o.selected = true; ms.appendChild(o);
+    });
+    ms.onchange = function () { convertMode(p, ms.value); armedKey = ""; renderRoutes(); };
+    var lm = el("label", "How "); lm.appendChild(ms); box.appendChild(lm);
+
+    if (p.mode === "single") {
+      var l1 = el("label", "Model "); l1.appendChild(modelSelect(ch, p.model, function (v) { p.model = v; armedKey = ""; }, "Model", true)); box.appendChild(l1);
+    }
+    if (p.mode === "cascade") {
+      box.appendChild(el("div", "Asked in order. A question stays with a tier when its confidence is at least that tier's threshold; otherwise only that question moves on to the next tier. The last tier answers whatever is left.", "help"));
+      (p.tiers || []).forEach(function (t, i) {
+        var last = i === p.tiers.length - 1, rowd = el("div", "", "tierrow");
+        rowd.appendChild(el("span", String(i + 1), "n"));
+        rowd.appendChild(modelSelect(ch, t.model, function (v) { t.model = v; armedKey = ""; }, "Model for tier " + (i + 1), true));
+        if (last) rowd.appendChild(el("span", "final tier: no threshold", "final"));
+        else if (t.threshold !== undefined && t.threshold !== null && typeof t.threshold !== "number") {
+          var pt = numberInput(null, "per-type", function () {}, "Threshold for tier " + (i + 1)); pt.disabled = true; pt.title = JSON.stringify(t.threshold);
+          rowd.appendChild(pt); rowd.appendChild(el("span", "per question type (kept as is)", "final"));
+        } else {
+          rowd.appendChild(el("span", "stays if confidence ≥", "final"));
+          rowd.appendChild(numberInput(t.threshold, f2s(typeof p.threshold === "number" ? p.threshold : 0.8), function (v) { t.threshold = v; }, "Threshold for tier " + (i + 1)));
+        }
+        rowd.appendChild(mini("↑", "Move tier " + (i + 1) + " up", function () { var x = p.tiers[i]; p.tiers[i] = p.tiers[i - 1]; p.tiers[i - 1] = x; armedKey = ""; renderRoutes(); }, i === 0));
+        rowd.appendChild(mini("↓", "Move tier " + (i + 1) + " down", function () { var x = p.tiers[i]; p.tiers[i] = p.tiers[i + 1]; p.tiers[i + 1] = x; armedKey = ""; renderRoutes(); }, last));
+        rowd.appendChild(mini("✕", "Remove tier " + (i + 1), function () { p.tiers.splice(i, 1); armedKey = ""; renderRoutes(); }, p.tiers.length <= 1));
+        box.appendChild(rowd);
+      });
+      box.appendChild(mini("+ Add tier", "Add a tier", function () { p.tiers.push({ model: (ch.aliases || [])[0] || "" }); armedKey = ""; renderRoutes(); }));
+      var ld = el("label", "  Default threshold for tiers without their own "); ld.appendChild(numberInput(p.threshold, "0.80", function (v) { p.threshold = v; }, "Default threshold")); box.appendChild(ld);
+    }
+    if (p.mode === "fan_out") {
+      box.appendChild(el("div", "All of these are asked at the same time.", "help"));
+      (p.models || []).forEach(function (m, i) {
+        var rowd = el("div", "", "tierrow");
+        rowd.appendChild(modelSelect(ch, m, function (v) { p.models[i] = v; armedKey = ""; }, "Model " + (i + 1), true));
+        rowd.appendChild(mini("✕", "Remove model " + (i + 1), function () { p.models.splice(i, 1); armedKey = ""; renderRoutes(); }, p.models.length <= 1));
+        box.appendChild(rowd);
+      });
+      box.appendChild(mini("+ Add model", "Add a model", function () { p.models.push((ch.aliases || [])[0] || ""); armedKey = ""; renderRoutes(); }));
+      var rs = document.createElement("select"); rs.setAttribute("aria-label", "How to combine");
+      [["none", "return every answer"], ["vote", "vote (majority choice)"], ["mean", "mean (average)"], ["most_confident", "most confident"]].forEach(function (r) {
+        var o = el("option", r[1]); o.value = r[0]; if ((p.reduce || "none") === r[0]) o.selected = true; rs.appendChild(o);
+      });
+      rs.onchange = function () { p.reduce = rs.value; armedKey = ""; };
+      var lr = el("label", "  Combine "); lr.appendChild(rs); box.appendChild(lr);
+      var lms = el("label", "  At least this many must answer "); var msn = document.createElement("input"); msn.type = "number"; msn.min = "0"; msn.step = "1";
+      msn.setAttribute("aria-label", "Minimum answers"); if (p.min_success) msn.value = p.min_success; msn.oninput = function () { p.min_success = msn.value === "" ? 0 : Number(msn.value); armedKey = ""; };
+      lms.appendChild(msn); box.appendChild(lms);
+    }
+
+    var acts = el("div", ""); acts.style.marginTop = "10px";
+    var key = "rsave|" + draft.name + "|" + JSON.stringify(planForServer(p));
+    acts.appendChild(btn(armedKey === key ? "Confirm: save " + (draft.name || "route") : "Save route", key, function () {
+      var name = draft.name.trim();
+      if (!name) { say("routemsg", "bad", "Give the route a name first."); return; }
+      draft.name = name;
+      var k = "rsave|" + name + "|" + JSON.stringify(planForServer(draft.plan));
+      twoStep(k, "routemsg", function () { send("PUT", "/v1/routes/" + encodeURIComponent(name), { plan: planForServer(draft.plan), expected_version: routesData().version }, "routemsg", "Saved route " + name); });
+    }, "Save route"));
+    acts.appendChild(btn("Cancel", "rcancel", function () { draft = null; armedKey = ""; settle(); say("routemsg", "", ""); renderRoutes(); }, "Cancel editing"));
+    box.appendChild(acts);
+    return box;
+  }
+
+  function renderRoutes() {
+    if (!routesView) return;
+    var v = routesData(), editable = !!v.editable, dflt = 0.8;
+    var names = Object.keys(v.routes || {}).sort();
+    var tbl = $("routes"); tbl.textContent = "";
+    var thead = document.createElement("thead");
+    thead.appendChild(row(["Route", "Mode", "How it works", "Source", ""].map(function (t) { return el("th", t); })));
+    tbl.appendChild(thead);
+    var tbody = document.createElement("tbody");
+    names.forEach(function (n) {
+      var plan = v.routes[n], src = (v.sources || {})[n] || "";
+      var how = el("td", "", "how"); how.textContent = describePlan(plan, dflt);
+      var acts = el("td");
+      if (editable) {
+        acts.appendChild(btn("Edit", "redit|" + n, function () { openEditor(n, plan, false); }, "Edit route " + n));
+        if (src === "override") {
+          var kr = "rrev|" + n;
+          acts.appendChild(btn(armedKey === kr ? "Confirm: back to config" : "Revert to config", kr, function () {
+            twoStep(kr, "routemsg", function () { send("DELETE", "/v1/routes/" + encodeURIComponent(n) + "?expected_version=" + routesData().version, null, "routemsg", n + " is back to its config plan"); });
+          }, "Revert route " + n + " to its config plan"));
+        }
+        if (src === "added") {
+          var kd = "rdel|" + n;
+          acts.appendChild(btn(armedKey === kd ? "Confirm delete" : "Delete", kd, function () {
+            twoStep(kd, "routemsg", function () { send("DELETE", "/v1/routes/" + encodeURIComponent(n) + "?expected_version=" + routesData().version, null, "routemsg", "Deleted route " + n); });
+          }, "Delete route " + n));
+        }
+      }
+      var srcText = src + ((v.config_summaries || {})[n] ? " (config: " + v.config_summaries[n] + ")" : "");
+      tbody.appendChild(row([el("td", n + (n === v.default ? "  (default)" : ""), "mono"), el("td", plan.mode), how, el("td", srcText, "muted"), acts]));
+      if (draft && !draft.isNew && draft.name === n) { var ed = el("td"); ed.colSpan = 5; ed.className = "detail"; ed.style.padding = "0"; ed.appendChild(renderEditor()); tbody.appendChild(row([ed])); }
+    });
+    if (!names.length) { var td = el("td", "No named routes. Aliases, profiles and inline routes still work.", "empty"); td.colSpan = 5; tbody.appendChild(row([td])); }
+    if (editable) {
+      var addTd = el("td"); addTd.colSpan = 5;
+      if (draft && draft.isNew) { addTd.style.padding = "0"; addTd.appendChild(renderEditor()); }
+      else addTd.appendChild(btn("+ New route", "rnew", function () {
+        var a = ((v.choices || {}).aliases || []);
+        openEditor("", { mode: "cascade", tiers: [{ model: (v.choices.profiles || [])[0] || a[0] || "" }, { model: (v.choices.profiles || [])[1] || a[1] || a[0] || "" }] }, true);
+      }, "Create a new route"));
+      tbody.appendChild(row([addTd]));
+    }
+    tbl.appendChild(tbody);
+    var parts = [];
+    if (!editable) parts.push("Read-only. Set [admin] edit_routes = true in the config to change routes here.");
+    else {
+      parts.push("A change applies to the next request. Models and clients are not editable here: they hold URLs, keys and access rules.");
+      if (!v.persisted) parts.push("Edits are kept in memory only and are lost on restart; set [admin] state_file to save them.");
+    }
+    if ((v.stale || []).length) parts.push("Skipped " + v.stale.length + " saved override(s) that no longer apply: " + v.stale.join(", ") + ".");
+    $("routenote").textContent = parts.join(" ");
+  }
+
+  var lastRecent = [];
+  var expanded = {};
+  function f2(x) { return x === null || x === undefined ? "–" : Number(x).toFixed(2); }
+
+  function qLine(q, cascade) {
+    var d = el("div", "", "qline");
+    d.appendChild(el("b", q.id));
+    if (q.type) d.appendChild(document.createTextNode(" (" + q.type + ")"));
+    if (cascade) {
+      if (q.confidence === null || q.confidence === undefined) {
+        d.appendChild(document.createTextNode("  no answer"));
+        d.appendChild(el("span", q.escalated ? "  → escalated" : "", "esc"));
+      } else if (q.threshold === null || q.threshold === undefined) {
+        d.appendChild(document.createTextNode("  confidence " + f2(q.confidence) + " (final tier)"));
+      } else {
+        var ok = !q.escalated;
+        d.appendChild(document.createTextNode("  confidence " + f2(q.confidence) + (ok ? " ≥ " : " < ") + f2(q.threshold)));
+        d.appendChild(el("span", ok ? "  → settled" : "  → escalated", ok ? "settled" : "esc"));
+      }
+    } else {
+      d.appendChild(document.createTextNode("  confidence " + f2(q.confidence)));
+    }
+    return d;
+  }
+
+  function renderDetail(r) {
+    var box = document.createElement("div");
+    if (r.cached) box.appendChild(el("div", r.cached + " question" + (r.cached === 1 ? "" : "s") + " served from the cache (no model call, no cost)", "qline"));
+    var cascade = r.detail.calls.some(function (c) { return c.tier !== undefined && c.tier !== null; });
+    r.detail.calls.forEach(function (c) {
+      var call = el("div", "", "call"), h4 = el("h4");
+      if (cascade) h4.appendChild(el("span", "Tier " + (c.tier + 1) + " · ", "sub"));
+      h4.appendChild(el("span", c.model, "mono"));
+      h4.appendChild(el("span", " · " + c.latency_ms + " ms · ", "sub"));
+      if (c.ok) h4.appendChild(el("span", "ok", "ok"));
+      else h4.appendChild(el("span", "failed: " + (c.error ? c.error.kind + " — " + c.error.message : "error"), "fail"));
+      call.appendChild(h4);
+      (c.questions || []).forEach(function (q) { call.appendChild(qLine(q, cascade)); });
+      box.appendChild(call);
+    });
+    if (r.detail.agreement && r.detail.agreement.length) {
+      var ag = el("div", "", "agree");
+      ag.appendChild(el("div", "Agreement across models", "t"));
+      r.detail.agreement.forEach(function (a) {
+        var msg;
+        if (a.type === "choice") msg = a.distinct === 1 ? "all " + a.models + " models agree" : a.models + " models gave " + a.distinct + " different choices";
+        else msg = "spread " + f2(a.spread) + " across " + a.models + " models";
+        var line = el("div", "", "qline");
+        line.appendChild(el("b", a.id));
+        line.appendChild(document.createTextNode(" (" + a.type + ")  " + msg));
+        ag.appendChild(line);
+      });
+      box.appendChild(ag);
+    }
+    return box;
+  }
+
+  function renderRecent() {
+    var table = $("recent");
+    table.textContent = "";
+    var thead = document.createElement("thead");
+    thead.appendChild(row(["Time", "Client", "Route", "Mode", "Models called", "ms", "Cost", "Result"].map(function (t) { return el("th", t, t === "ms" || t === "Cost" ? "n" : ""); })));
+    table.appendChild(thead);
+    var tbody = document.createElement("tbody");
+    lastRecent.forEach(function (r) {
+      var open = !!expanded[r.request_id];
+      var first = el("td"); first.appendChild(el("span", "▸", "caret")); first.appendChild(document.createTextNode(new Date(r.time).toLocaleTimeString()));
+      var tr = row([first, el("td", r.client || "–"), el("td", r.route, "mono"), el("td", r.mode), el("td", r.models.join(" → "), "mono"),
+                    el("td", r.duration_ms, "n"), el("td", r.cost_usd !== undefined && r.cost_usd !== null ? usd(r.cost_usd) : "–", "n"), el("td", r.ok ? "ok" : "failed" + (r.failures ? " (" + r.failures + " errors)" : ""), r.ok ? "ok" : "bad")]);
+      tr.className = "req" + (open ? " open" : "");
+      tr.tabIndex = 0; tr.setAttribute("role", "button"); tr.setAttribute("aria-expanded", open ? "true" : "false");
+      var toggle = function () { expanded[r.request_id] = !expanded[r.request_id]; renderRecent(); };
+      tr.addEventListener("click", toggle);
+      tr.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+      tbody.appendChild(tr);
+      if (open) { var d = el("td"); d.colSpan = 8; d.className = "detail"; d.appendChild(renderDetail(r)); tbody.appendChild(row([d])); }
+    });
+    if (!lastRecent.length) { var td = el("td", "No requests yet.", "empty"); td.colSpan = 8; tbody.appendChild(row([td])); }
+    table.appendChild(tbody);
+  }
+
+  var timer = null;
+  function showGate(msg) {
+    $("gate").style.display = "block"; $("content").hidden = true; $("err").textContent = msg || "";
+    $("meta").textContent = "locked";
+  }
+  // For a signed-in non-admin: only the keys section and Sign out.
+  function showKeysOnly() {
+    $("gate").style.display = "none"; $("content").hidden = false;
+    Array.prototype.forEach.call($("content").children, function (c) { c.hidden = c.id !== "keys-section" && c.id !== "signout-row"; });
+    $("meta").textContent = "signed in";
+    loadKeys(); $("signout").hidden = false;
+  }
+  function tick() {
+    Promise.all([api("/v1/stats"), api("/v1/routes")]).then(function (rs) {
+      if (rs[0].status === 401 || rs[0].status === 403) {
+        return rs[0].clone().json().catch(function () { return {}; }).then(function (b) {
+          var adminOnly = b && b.error && b.error.type === "admin_required";
+          if (adminOnly) {
+            // A valid key that is not an admin's: no stats, but it may still manage its own keys.
+            return api("/v1/keys").then(function (kr) {
+              if (kr.ok) { showKeysOnly(); return null; }
+              showGate("That key is valid but is not an admin key, so it cannot view stats."); return null;
+            });
+          }
+          showGate(getKey() ? "That key was rejected." : "");
+          return null;
+        });
+      }
+      if (!rs[0].ok || !rs[1].ok) throw new Error("HTTP " + rs[0].status + "/" + rs[1].status);
+      return Promise.all([rs[0].json(), rs[1].json()]);
+    }).then(function (data) {
+      if (!data) return;
+      $("gate").style.display = "none"; $("content").hidden = false;
+      Array.prototype.forEach.call($("content").children, function (c) { if (c.id !== "keys-section" && c.id !== "clients-section") c.hidden = false; });
+      render(data[0], data[1]);
+      loadProfiles();
+      loadKeys();
+      $("signout").hidden = !isSession();
+    }).catch(function (e) { $("meta").textContent = "error: " + e.message; });
+  }
+  // Sign-in: a username and password become a session key, kept like a pasted one.
+  var SESSION_NAME = "ignatius_session";
+  function sessionMark(v) { try { if (v) sessionStorage.setItem(SESSION_NAME, "1"); else sessionStorage.removeItem(SESSION_NAME); } catch (e) {} }
+  function isSession() { try { return !!sessionStorage.getItem(SESSION_NAME); } catch (e) { return false; } }
+  function authHeaders() { var h = { "Content-Type": "application/json" }; if (getKey()) h.Authorization = "Bearer " + getKey(); return h; }
+  fetch("/v1/login").then(function (r) { if (r.ok) $("loginbox").hidden = false; }).catch(function () {});
+  $("signin").onclick = function () {
+    fetch("/v1/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: $("user").value, password: $("pass").value }) })
+      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, status: r.status, b: b }; }); })
+      .then(function (x) {
+        $("pass").value = "";
+        if (!x.ok) { $("err").textContent = x.status === 429 ? "Too many attempts. Try again later." : "Invalid username or password."; return; }
+        setKey(x.b.key); sessionMark(true); $("err").textContent = ""; tick();
+      }).catch(function (e) { $("err").textContent = "error: " + e.message; });
+  };
+  $("pass").addEventListener("keydown", function (e) { if (e.key === "Enter") $("signin").click(); });
+  $("signout").onclick = function () {
+    var done = function () { setKey(""); sessionMark(false); showGate(""); };
+    if (isSession()) fetch("/v1/logout", { method: "POST", headers: authHeaders() }).then(done, done); else done();
+  };
+
+  // API keys (only shown when the gateway has self-service keys on).
+  var keyNote = function (t, cls) { var m = $("keymsg"); m.textContent = ""; if (t) m.appendChild(el("span", t, cls || "")); return m; };
+  function loadKeys() {
+    api("/v1/keys").then(function (r) {
+      if (!r.ok) { $("keys-section").hidden = true; return null; }
+      return r.json();
+    }).then(function (b) {
+      if (!b) return;
+      $("keys-section").hidden = false;
+      var rows = (b.keys || []).map(function (k) {
+        var act = el("td"), rv = el("button", "Revoke");
+        rv.onclick = function () {
+          if (rv.dataset.armed !== "1") { rv.dataset.armed = "1"; rv.textContent = "Confirm revoke"; setTimeout(function () { rv.dataset.armed = ""; rv.textContent = "Revoke"; }, 6000); return; }
+          fetch("/v1/keys/" + encodeURIComponent(k.id), { method: "DELETE", headers: authHeaders() }).then(function (r) { return r.json(); })
+            .then(function (x) { keyNote("Revoked " + ((x.revoked || []).length) + " key(s).", "good"); loadKeys(); });
+        };
+        act.appendChild(rv);
+        return [el("td", k.name, "mono"), el("td", k.creator, "mono"), el("td", k.admin ? "admin" : ""), el("td", k.rate_limit_per_minute || "–", "n"),
+                el("td", k.expires ? new Date(k.expires).toLocaleString() : "never"), act];
+      });
+      fill($("keys"), [["Key"], ["Created by"], ["Role"], ["Req/min", "n"], ["Expires"], [""]], rows, "No runtime keys yet.");
+    }).catch(function () {});
+  }
+  $("kmake").onclick = function () {
+    var body = { name: $("knew").value.trim() };
+    if ($("krate").value) body.rate_limit_per_minute = Number($("krate").value);
+    if ($("kexp").value) body.expires_in_s = Math.round(Number($("kexp").value) * 3600);
+    fetch("/v1/keys", { method: "POST", headers: authHeaders(), body: JSON.stringify(body) })
+      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, b: b }; }); })
+      .then(function (x) {
+        if (!x.ok) { keyNote((x.b.error && x.b.error.message) || "Could not create the key.", "bad"); return; }
+        var m = keyNote("Created " + x.b.name + ". Copy it now, it is shown once: ", "good");
+        m.appendChild(el("code", x.b.key, "mono"));
+        $("knew").value = ""; loadKeys();
+      });
+  };
+
+  // ---- Evaluate (SPEC 15) ----
+  var evTimer = null, evId = "";
+  function evSay(kind, text) { say("evmsg", kind, text); }
+  function evStop() { clearInterval(evTimer); evTimer = null; $("evrun").disabled = false; $("evcancel").hidden = true; }
+  function evErr(b, fallback) { return (b && b.error && b.error.message) || fallback; }
+  function pct(x) { return (Number(x) * 100).toFixed(1) + "%"; }
+  function evPoll() {
+    api("/v1/evals/" + encodeURIComponent(evId)).then(function (r) { return r.json().then(function (b) { return { ok: r.ok, b: b }; }); })
+      .then(function (x) {
+        if (!x.ok) { evStop(); evSay("bad", evErr(x.b, "Could not read the evaluation.")); return; }
+        var j = x.b;
+        if (j.status === "running") { evSay("", "Running: " + j.done + " of " + (j.total || "…") + " calls done."); return; }
+        evStop();
+        if (j.status === "done") { evSay("good", "Done."); evRender(j.report); }
+        else if (j.status === "canceled") evSay("", "Canceled.");
+        else evSay("bad", "Failed: " + (j.error || "unknown error"));
+      }).catch(function () {});
+  }
+  function evWatch(id) {
+    evId = id; $("evrun").disabled = true; $("evcancel").hidden = false;
+    clearInterval(evTimer); evTimer = setInterval(evPoll, 1000); evPoll();
+  }
+  function evRender(rep) {
+    var out = $("evout"); out.textContent = "";
+    out.appendChild(el("p", rep.items + " items, " + rep.judged_questions + " judged questions. Each route is compared with " + rep.baseline + "."));
+    var head = [["Route"], ["Mode"], ["Accuracy", "n"], ["95% CI", "n"], ["Unanswered", "n"], ["p50 ms", "n"], ["p95 ms", "n"], ["$ / 1k items", "n"], ["ECE", "n"], ["AUROC", "n"]];
+    var rows = rep.candidates.map(function (c) {
+      return [el("td", c.name, "mono"), el("td", c.mode), el("td", pct(c.accuracy) + " (" + c.correct + "/" + c.judged + ")", "n"),
+        el("td", (c.ci95[0] * 100).toFixed(0) + "–" + (c.ci95[1] * 100).toFixed(0) + "%", "n"), el("td", c.unanswered, "n"),
+        el("td", Math.round(c.latency_ms_p50), "n"), el("td", Math.round(c.latency_ms_p95), "n"),
+        el("td", c.cost_usd_per_1k_items === undefined ? "–" : usd(c.cost_usd_per_1k_items), "n"),
+        el("td", c.ece_top_probability === undefined ? "–" : pct(c.ece_top_probability), "n"),
+        el("td", c.auroc_confidence === undefined ? "–" : Number(c.auroc_confidence).toFixed(2), "n")];
+    });
+    var tbl = el("table"), card = el("div", null, "card");
+    fill(tbl, head, rows, ""); card.appendChild(tbl); out.appendChild(card);
+    rep.candidates.forEach(function (c) {
+      out.appendChild(el("h3", c.name));
+      if (c.vs_baseline) out.appendChild(el("p", c.vs_baseline.verdict, "verdict"));
+      if (c.failed_items) out.appendChild(el("p", c.failed_items + " items were not fully answered. Failures: " + fmtFailures(c.failures)));
+      Object.keys(c.by_type || {}).sort().forEach(function (t) {
+        var s = c.by_type[t];
+        out.appendChild(el("p", t + ": " + s.judged + " questions, " + pct(s.accuracy) + " correct" + (s.mae !== undefined ? ", mean error " + Number(s.mae).toFixed(2) + " levels" : "")));
+      });
+      (c.answered_by || []).forEach(function (a) { out.appendChild(el("p", "answered by " + a.model + ": " + pct(a.share) + " of questions, " + pct(a.accuracy) + " of those correct")); });
+      (c.tiers || []).forEach(function (t) { out.appendChild(el("p", "tier " + t.tier + " " + t.model + ": asked " + t.questions_asked + ", settled " + t.settled + ", escalated " + t.escalated)); });
+      (c.members || []).forEach(function (m) { out.appendChild(el("p", "member " + m.model + " on its own: " + pct(m.accuracy) + " correct (" + m.correct + "/" + m.judged + ")")); });
+      (c.misses || []).forEach(function (m) {
+        out.appendChild(el("p", "miss " + m.item + " / " + m.question + ": gold " + m.gold + ", got " + m.got + (m.model ? " from " + m.model : "") + (m.confidence !== undefined ? " (confidence " + Number(m.confidence).toFixed(2) + ")" : ""), "mono"));
+      });
+    });
+    (rep.sweeps || []).forEach(function (s) {
+      out.appendChild(el("h3", "Sweep of " + s.candidate + " (" + s.models.join(" > ") + "): one threshold on every tier but the last"));
+      var t2 = el("table"), c2 = el("div", null, "card");
+      fill(t2, [["Threshold", "n"], ["Accuracy", "n"], ["Reached later tiers", "n"], ["$ / 1k items", "n"]], s.rows.map(function (r) {
+        return [el("td", r.threshold.toFixed(2), "n"), el("td", pct(r.accuracy), "n"),
+          el("td", (r.reach || []).map(function (x) { return (x * 100).toFixed(0) + "%"; }).join(" / "), "n"),
+          el("td", r.cost_usd_per_1k_items === undefined ? "–" : usd(r.cost_usd_per_1k_items), "n")];
+      }), "");
+      c2.appendChild(t2); out.appendChild(c2);
+    });
+  }
+  $("evfile").onchange = function () {
+    var f = this.files[0]; if (!f) return;
+    var rd = new FileReader(); rd.onload = function () { $("evdata").value = String(rd.result); }; rd.readAsText(f);
+  };
+  $("evrun").onclick = function () {
+    var routes = $("evroutes").value.split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+    if (!routes.length) { evSay("bad", "List at least one route."); return; }
+    if (!$("evdata").value.trim()) { evSay("bad", "Paste a test set or load a file."); return; }
+    evSay("", "Starting…"); $("evout").textContent = ""; $("evrun").disabled = true;
+    apiSend("POST", "/v1/evals", { routes: routes, data: $("evdata").value, sweep: $("evsweep").checked, concurrency: Number($("evconc").value) || 0 })
+      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, b: b }; }); })
+      .then(function (x) {
+        if (!x.ok) { $("evrun").disabled = false; evSay("bad", evErr(x.b, "Could not start the evaluation.")); return; }
+        evWatch(x.b.id);
+      }).catch(function () { $("evrun").disabled = false; evSay("bad", "Could not reach the gateway."); });
+  };
+  $("evcancel").onclick = function () { if (evId) apiSend("DELETE", "/v1/evals/" + encodeURIComponent(evId)); };
+  // pick up a run already in progress (a reload, a second tab)
+  function evAttach() {
+    if (evTimer) return;
+    api("/v1/evals").then(function (r) { return r.ok ? r.json() : null; }).then(function (b) {
+      var running = b && (b.evals || []).filter(function (e) { return e.status === "running"; })[0];
+      if (running) evWatch(running.id);
+    }).catch(function () {});
+  }
+  var evAttached = false;
+
+  $("save").onclick = function () { setKey($("key").value.trim()); $("key").value = ""; tick(); };
+  $("key").addEventListener("keydown", function (e) { if (e.key === "Enter") $("save").click(); });
+  tick(); timer = setInterval(tick, 5000);
+})();
+</script>
+</body>
+</html>

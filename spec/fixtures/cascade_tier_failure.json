@@ -1,0 +1,82 @@
+{
+  "name": "cascade falls through a failed tier",
+  "mode": "cascade",
+  "args": {
+    "tiers": [
+      "jeff",
+      "jev"
+    ],
+    "threshold": 0.8
+  },
+  "request": {
+    "state": "x",
+    "questions": {
+      "q": {
+        "type": "noul",
+        "instructions": "?"
+      }
+    }
+  },
+  "mock": {
+    "jeff": {
+      "error": {
+        "kind": "timeout",
+        "message": "deadline exceeded"
+      }
+    },
+    "jev": {
+      "answers": {
+        "q": {
+          "type": "noul",
+          "noul": 0.1
+        }
+      }
+    }
+  },
+  "expect": {
+    "answers": {
+      "q": {
+        "model": "jev",
+        "noul": 0.1,
+        "confidence": 0.8
+      }
+    },
+    "failures": [
+      {
+        "model": "jeff",
+        "error": {
+          "kind": "timeout"
+        }
+      }
+    ],
+    "trace": [
+      {
+        "tier": 0,
+        "model": "jeff",
+        "questions": [
+          "q"
+        ],
+        "escalated": [
+          "q"
+        ],
+        "error": {
+          "kind": "timeout"
+        },
+        "detail": [
+          {
+            "id": "q",
+            "escalated": true
+          }
+        ]
+      },
+      {
+        "tier": 1,
+        "model": "jev",
+        "questions": [
+          "q"
+        ],
+        "escalated": []
+      }
+    ]
+  }
+}

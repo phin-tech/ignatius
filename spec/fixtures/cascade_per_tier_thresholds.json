@@ -1,0 +1,46 @@
+{
+  "name": "cascade uses each tier's own threshold, per question type",
+  "mode": "cascade",
+  "args": {
+    "threshold": 0.8,
+    "tiers": [
+      { "model": "jeff", "threshold": { "noul": 0.5, "choice": 0.95 } },
+      { "model": "clef", "threshold": 0.7 },
+      { "model": "jev" }
+    ]
+  },
+  "request": {
+    "state": "x",
+    "questions": {
+      "n": { "type": "noul",   "instructions": "?" },
+      "c": { "type": "choice", "instructions": "?", "criteria": ["a", "b"] },
+      "d": { "type": "choice", "instructions": "?", "criteria": ["a", "b"] }
+    }
+  },
+  "mock": {
+    "jeff": { "answers": {
+      "n": { "type": "noul", "noul": 0.8 },
+      "c": { "type": "choice", "choice": "a", "probabilities": { "a": 0.9, "b": 0.1 }, "confidence": 0.9 },
+      "d": { "type": "choice", "choice": "a", "probabilities": { "a": 0.9, "b": 0.1 }, "confidence": 0.9 }
+    }},
+    "clef": { "answers": {
+      "c": { "type": "choice", "choice": "b", "probabilities": { "a": 0.2, "b": 0.8 }, "confidence": 0.8 },
+      "d": { "type": "choice", "choice": "b", "probabilities": { "a": 0.45, "b": 0.55 }, "confidence": 0.55 }
+    }},
+    "jev": { "answers": {
+      "d": { "type": "choice", "choice": "a", "probabilities": { "a": 0.97, "b": 0.03 }, "confidence": 0.97 }
+    }}
+  },
+  "expect": {
+    "answers": {
+      "n": { "model": "jeff", "confidence": 0.6 },
+      "c": { "model": "clef", "choice": "b", "confidence": 0.8 },
+      "d": { "model": "jev",  "choice": "a", "confidence": 0.97 }
+    },
+    "trace": [
+      { "tier": 0, "model": "jeff", "questions": ["c", "d", "n"], "escalated": ["c", "d"] },
+      { "tier": 1, "model": "clef", "questions": ["c", "d"],      "escalated": ["d"] },
+      { "tier": 2, "model": "jev",  "questions": ["d"],           "escalated": [] }
+    ]
+  }
+}

@@ -1,0 +1,60 @@
+# ---- Secrets and local config: never commit -------------------------------------
+# API keys live in environment variables; configs only name the variable. Commit the
+# .env.example templates, never a real .env.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+credentials*.json
+
+# ---- Go --------------------------------------------------------------------------
+*.test
+*.out
+*.prof
+coverage.html
+# A local workspace file is per-developer; go.sum IS committed.
+go.work
+go.work.sum
+/go/bin/
+
+# ---- Python (also see python/.gitignore) -----------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+# uv.lock IS committed.
+
+# ---- Editors and OS --------------------------------------------------------------
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# ---- Local agent tooling ---------------------------------------------------------
+# The Go skills are third-party and installed once per agent, so the same pack sits in
+# four places. skills-lock.json records the source and hash of each skill, so the
+# copies are reproducible and do not belong in the repo. Project-level settings that
+# a team may share (e.g. .claude/settings.json) are deliberately NOT ignored.
+.agents/
+agent/
+.pi/
+.claude/skills/
+.claude/settings.local.json
+.claude/*.local.*
+
+# ---- Scratch and runtime ---------------------------------------------------------
+tmp/
+scratch/
+*.log
+*.pid

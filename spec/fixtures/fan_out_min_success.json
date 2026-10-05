@@ -1,0 +1,11 @@
+{
+  "name": "fan_out ok=false when below min_success",
+  "mode": "fan_out",
+  "args": { "models": ["jev", "jeff"], "min_success": 2 },
+  "request": { "state": "x", "questions": { "q": { "type": "noul", "instructions": "?" } } },
+  "mock": {
+    "jev":  { "answers": { "q": { "type": "noul", "noul": 0.9 } } },
+    "jeff": { "error": { "kind": "http", "message": "503" } }
+  },
+  "expect": { "ok": false, "results": [ { "model": "jev" } ], "failures": [ { "model": "jeff" } ] }
+}

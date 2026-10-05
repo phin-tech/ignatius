@@ -1,0 +1,33 @@
+{
+  "name": "fan_out with reduce=vote yields an ensemble answer",
+  "mode": "fan_out",
+  "args": { "models": ["jeff", "jev", "laya"], "reduce": "vote" },
+  "request": {
+    "state": "x",
+    "questions": {
+      "c": { "type": "choice", "instructions": "?", "criteria": ["a", "b"] },
+      "n": { "type": "noul",   "instructions": "?" }
+    }
+  },
+  "mock": {
+    "jeff": { "answers": {
+      "c": { "type": "choice", "choice": "a", "probabilities": { "a": 0.7, "b": 0.3 } },
+      "n": { "type": "noul", "noul": 0.9 } } },
+    "jev": { "answers": {
+      "c": { "type": "choice", "choice": "a", "probabilities": { "a": 0.6, "b": 0.4 } },
+      "n": { "type": "noul", "noul": 0.7 } } },
+    "laya": { "answers": {
+      "c": { "type": "choice", "choice": "b", "probabilities": { "a": 0.2, "b": 0.8 } },
+      "n": { "type": "noul", "noul": 0.5 } } }
+  },
+  "expect": {
+    "ok": true,
+    "answers": {
+      "c": { "model": "ensemble", "contributors": ["jeff", "jev", "laya"], "choice": "a",
+             "probabilities": { "a": 0.6666666666666666, "b": 0.3333333333333333 },
+             "confidence": 0.6666666666666666 },
+      "n": { "model": "ensemble", "contributors": ["jeff", "jev", "laya"], "noul": 0.7, "confidence": 0.4 }
+    },
+    "results": [ { "model": "jeff" }, { "model": "jev" }, { "model": "laya" } ]
+  }
+}

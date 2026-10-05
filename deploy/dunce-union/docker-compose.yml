@@ -1,0 +1,70 @@
+name: dunce-union
+
+# dunce-union: the optional self-hosting kit. Self-hosted System One models,
+# one service per model, behind an Ignatius gateway. Skip this entirely if you
+# point Ignatius at models you already host: it only needs a URL and auth.
+# Each service is an unmodified Decis engine image (https://github.com/chaitin/Decis)
+# serving POST /v1/systemone on container port 8000, weights baked in.
+#
+#   cp .env.example .env              # set both keys, pick COMPOSE_PROFILES
+#   docker compose up -d --wait       # starts the profiles named in .env
+#   docker compose --profile jeff up -d --wait
+#
+# Profiles are named after the Ignatius alias. Several engines resident at once
+# hold several GB of memory each, so start only the ones you need.
+# Sub-services are reachable only on the compose network; clients talk to
+# Ignatius on :8081 and pick a model, route or inline route with `model`.
+# Image sizes (compressed): laya 4.4G, jeff 5.9G, kev 6.0G, jeff-gemma 17.7G.
+
+x-engine: &engine
+  restart: unless-stopped
+  environment:
+    DECIS_API_KEY: ${DUNCE_API_KEY:?set DUNCE_API_KEY in .env}
+    DECIS_HOST: 0.0.0.0
+    DECIS_PORT: "8000"
+    DECIS_LOG_LEVEL: ${DUNCE_LOG_LEVEL:-info}
+  healthcheck:
+    # /readyz is 503 until the model can answer, so --wait means "ready to serve".
+    test:
+      - CMD
+      - python
+      - -c
+      - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/readyz', timeout=2).status == 200 else 1)"
+    interval: 5s
+    timeout: 3s
+    retries: 120
+    start_period: 20s
+
+services:
+  # The Ignatius gateway: the only published port. It reaches the model
+  # services below by name on the compose network.
+  ignatius:
+    build: ../../go
+    restart: unless-stopped
+    environment:
+      IGNATIUS_API_KEY: ${IGNATIUS_API_KEY:?set IGNATIUS_API_KEY in .env}
+      DUNCE_API_KEY: ${DUNCE_API_KEY:?set DUNCE_API_KEY in .env}
+    volumes:
+      - ./ignatius.toml:/etc/ignatius/ignatius.toml:ro
+    ports: ["${IGNATIUS_BIND:-127.0.0.1}:${IGNATIUS_PORT:-8081}:8081"]
+
+  laya:
+    <<: *engine
+    profiles: [laya]
+    image: ${DUNCE_LAYA_IMAGE:-chaitin/decis:laya-multilingual-v0.4.0}
+
+  jeff:
+    <<: *engine
+    profiles: [jeff]
+    image: ${DUNCE_JEFF_IMAGE:-chaitin/decis:jeff-qwen3.5-0.8b-v0.4.0}
+
+  kev:
+    <<: *engine
+    profiles: [kev]
+    image: ${DUNCE_KEV_IMAGE:-chaitin/decis:kev-0.8b-v0.4.0}
+
+  # 17.7 GB image: opt-in only.
+  jeff-gemma:
+    <<: *engine
+    profiles: [jeff-gemma]
+    image: ${DUNCE_JEFF_GEMMA_IMAGE:-chaitin/decis:jeff-gemma4-e2b-v0.4.0}
