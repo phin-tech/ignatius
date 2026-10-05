@@ -1,0 +1,12 @@
+# A gateway config with one model, enough to run optimize.py. Copy it to ignatius.toml.
+# Secrets are environment variables the file names, never values in it.
+listen = "127.0.0.1:8081"
+default_route = "jev"
+
+[models.jev]
+provider = "systemone"                 # anything that speaks /v1/systemone
+base_url = "https://api.typesafe.ai"
+model = "jev-latest"
+api_key_env = "TYPESAFE_API_KEY"
+# Without a price, eval reports no cost and the optimizer cannot gate on it. USD per million input tokens.
+price_input_per_mtok = 0.042

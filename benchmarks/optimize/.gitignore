@@ -1,0 +1,6 @@
+# what the tools here write by default
+banking77.jsonl
+questions.optimized*.json
+# the scorer binary and the config copied from the example
+/ignatius
+ignatius.toml
