@@ -270,6 +270,10 @@ verdict: no detectable difference from strong (+0.0 points, 95% CI +0.0 to +0.0)
 
 `/` is the status page. It shows the live state: models, routes, spend, and a drill-down per request. When you set a key, it asks for one.
 
+![The Ignatius status page: models, profiles, routes and recent requests](docs/images/status-page.png)
+
+That's demo data from two fake models, so the numbers mean nothing. With `edit_profiles` and `edit_routes` on, the profile dropdowns and the route Edit buttons work. Models and clients stay in the config.
+
 ## Self-hosting models (dunce-union)
 
 This is the optional kit for running the models yourself. I included it for when you don't want to call a hosted API. It's a compose setup. You can also skip it and just point Ignatius at your own URL.
