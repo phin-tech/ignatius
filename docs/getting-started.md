@@ -39,6 +39,11 @@ export TYPESAFE_API_KEY=...
 
 4. Check that it is up. `GET /healthz` and `GET /readyz` answer without a key. `/` is the status page.
 
+![Models table on the status page](images/status-models.png)
+
+*Open `/` to see each model's readiness, calls, latency and spend. Demo data from two fake models, so the numbers mean nothing.*
+
+
 No client key is needed on loopback. To listen anywhere else, set `api_key_env`. See [Auth](auth.html).
 
 ## Make a call
@@ -59,7 +64,7 @@ curl -s localhost:8081/v1/systemone -d '{
 }'
 ```
 
-2. Read the answer. The first four fields are what Jev returns. The `ignatius` object is extra. Clients that don't know about it ignore it.
+2. Read the answer. The `ignatius` object is the extra part. Every other field is what Jev returns, and clients that don't know about `ignatius` ignore it.
 
 ```json
 {
@@ -133,3 +138,12 @@ tiers = [ { model = "cheap", threshold = 0.9 }, "jev" ]    # keep a cheap answer
 
 2. Call it with `"model": "triage"`.
 3. Read the trace. `sources` tells you which model produced each final answer. `trace` has one entry per tier that was called. Each entry shows the question's confidence, the threshold, and whether it escalated. `failures` lists any tier that errored. A failed tier escalates everything it was asked.
+
+![Recent requests on the status page](images/status-recent-requests.png)
+
+*Every request shows up here with its route, the models it called, latency and cost. Demo data from two fake models, so the numbers mean nothing.*
+
+![A cascade request expanded](images/status-trace-cascade.png)
+
+*Click a request to see the trace. Here `billing` settled at the cheap tier, and `tone` and `urgency` escalated to `jev`. Demo data from two fake models, so the numbers mean nothing.*
+

@@ -23,4 +23,13 @@ verdict: no detectable difference from strong (+0.0 points, 95% CI +0.0 to +0.0)
 
 The same engine runs behind an admin API and the Evaluate panel on the status page. Turn it on with `[eval] enabled = true`. Every run makes real model calls.
 
+![The Evaluate panel](images/status-evaluate.png)
+
+*Paste the routes and a JSONL test set, or choose a file, then press Run.*
+
+![An evaluation result](images/status-eval-result.png)
+
+*The report: accuracy with a confidence interval, cost and latency per route, a miss list, a verdict against the baseline, and a threshold sweep. Demo data from two fake models, so the numbers mean nothing. The fake models answer at random, so don't read the verdict as a result.*
+
+
 The test-set format and what is judged are in SPEC section 15.

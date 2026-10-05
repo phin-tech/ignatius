@@ -29,6 +29,11 @@ export IGNATIUS_API_KEY=$(openssl rand -hex 32)
 
 3. Send it as a Bearer token. A request with no credential gets a 403. A request with the wrong one gets a 401.
 
+![The key prompt](images/status-key-prompt.png)
+
+*Once a key is required, the status page is locked until you paste one.*
+
+
 To rotate, put the new and old keys in the variable, separated by a comma. Remove the old one when every caller has moved.
 
 If you listen on a non-loopback address with no key, the gateway refuses to start. Set `IGNATIUS_ALLOW_NO_AUTH=1` to override. Do that only behind another layer that handles auth.
@@ -49,6 +54,11 @@ routes = ["triage", "fast"]
 ```
 
 2. Hand the key to the caller.
+
+![The Clients panel](images/status-clients.png)
+
+*Admins see each client's requests, rate-limited count and spend. Keys never appear here.*
+
 
 Past the rate limit, the gateway returns 429 `rate_limited` with a `Retry-After` header. A route outside the list returns 403 `route_not_allowed`. A restricted client sees the same error for a forbidden name and a name that doesn't exist, so it can't list your models.
 
@@ -79,6 +89,11 @@ admin = true
 
 The status page then shows a sign-in form. A login returns a short-lived session key. It lasts 8 hours by default. Sessions live in memory, so a restart signs everyone out.
 
+![The sign-in form](images/status-sign-in.png)
+
+*With users configured, the lock screen offers a username and password next to the key field.*
+
+
 Wrong guesses are throttled before any password hashing happens. An unknown user and a wrong password give the same 401 `invalid_credentials`.
 
 Groups, password reset, MFA and SSO are not part of this repo.
@@ -94,6 +109,15 @@ state_file = "/var/lib/ignatius/state.json"
 ```
 
 2. Start with at least one configured key or user. That is the root of trust.
+
+![The API keys panel](images/status-api-keys.png)
+
+*Signed in, you see the API keys panel. Name a key, set a rate and an expiry, and create it.*
+
+![A newly minted key](images/status-api-keys-minted.png)
+
+*The key is shown once. Only its hash is stored. This one came from a throwaway demo gateway.*
+
 
 Anyone with a valid key can then mint more. Each key is stored only as a hash.
 
@@ -111,5 +135,10 @@ state_file = "/var/lib/ignatius/state.json"   # optional
 ```
 
 2. Sign in as an admin. Use the dropdowns and Edit buttons on the status page.
+
+![Editing a route on the status page](images/status-cascade-editor.png)
+
+*Admins get the Edit buttons and the profile dropdowns.*
+
 
 Without a `state_file`, edits are lost on restart. Models and clients can't be edited here because they hold URLs, keys and access rules.

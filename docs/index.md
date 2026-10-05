@@ -11,6 +11,11 @@ Ignatius is a gateway that sits in front of decision models like Jev, Clef and D
 
 Decision models come in two kinds: fast and cheap, or slow and smart. You want both, cheap for the easy questions, smart for the hard ones. Every provider answers a little differently, so you end up writing glue code. Ignatius is that glue, and it keeps a trace of every decision it makes.
 
+![The Ignatius status page](images/status-page.png)
+
+*The status page: models, profiles, routes and every recent request. Demo data from two fake models, so the numbers mean nothing.*
+
+
 ## Three modes
 
 1. **Single.** Send the questions to one model. It normalizes the answer.
